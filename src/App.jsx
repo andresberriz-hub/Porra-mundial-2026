@@ -665,7 +665,9 @@ export default function PorraMundial(){
   const [loaded, setLoaded] = useState(false);
   const [saveReady, setSaveReady] = useState(false);
 
+  // Carga inicial + suscripción en tiempo real
   useEffect(()=>{
+    // Carga inicial
     (async()=>{
       try{
         const { data, error } = await supabase
@@ -681,13 +683,52 @@ export default function PorraMundial(){
       setLoaded(true);
       setTimeout(()=>setSaveReady(true), 100);
     })();
+
+    // Suscripción en tiempo real — recibe cambios de otros usuarios
+    const channel = supabase
+      .channel('porra_state_changes')
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'porra_state', filter: 'id=eq.1' },
+        (payload) => {
+          const remote = payload.new?.data;
+          if(remote){
+            const parsed = typeof remote === 'string' ? JSON.parse(remote) : remote;
+            setState(s => {
+              // Merge: mantén el estado local para la porra activa,
+              // pero acepta cambios externos en matches y la otra porra
+              return { ...parsed };
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   },[]);
 
   useEffect(()=>{
     if(!saveReady) return;
     const t=setTimeout(async()=>{
       try{
-        await supabase.from('porra_state').upsert({ id: 1, data: state });
+        // Antes de guardar, lee el estado más reciente de la BD
+        const { data } = await supabase
+          .from('porra_state')
+          .select('data')
+          .eq('id', 1)
+          .single();
+        
+        const remote = data?.data ? (typeof data.data === 'string' ? JSON.parse(data.data) : data.data) : null;
+        
+        // Merge: combina estado remoto con cambios locales
+        const merged = remote ? {
+          ...remote,
+          matches: state.matches,           // matches siempre del local (quien guarda manda)
+          adminPassword: state.adminPassword,
+          eibar: state.eibar,
+          zumaia: state.zumaia,
+        } : state;
+
+        await supabase.from('porra_state').upsert({ id: 1, data: merged });
       }catch(e){ console.log("save error",e); }
     },800);
     return()=>clearTimeout(t);
