@@ -475,9 +475,9 @@ function calcScore(participant, allMatches, phase=null){
     }
   }
   total += playerPts(participant, phaseMatches);
-  if(!phase && participant.manualPts) total += participant.manualPts;
-  if(!phase && Array.isArray(participant.manualAdjustments)){
-    total+=participant.manualAdjustments.reduce((s,a)=>s+(a.pts||0),0);
+  if(!phase){
+    if(Array.isArray(participant.manualAdjustments)){total+=participant.manualAdjustments.reduce((s,a)=>s+(a.pts||0),0);}
+    else if(participant.manualPts){total+=participant.manualPts;}
   }
   // Créditos sobrantes → puntos extra solo en general
   if(!phase){
@@ -676,46 +676,30 @@ export default function PorraMundial(){
         const {data,error}=await supabase.from('porra_state').select('data').eq('id',1).single();
         if(!error&&data?.data){
           const parsed=typeof data.data==='string'?JSON.parse(data.data):data.data;
-          // Merge con initialState para garantizar que todas las claves existen
-          setState(s=>({
-            ...initialState,
-            ...parsed,
-            eibar: {...initialPorra(),...(parsed.eibar||{})},
-            zumaia: {...initialPorra(),...(parsed.zumaia||{})},
-            matches: parsed.matches||[],
-            adminPassword: parsed.adminPassword||"AD1818",
+          setState(s=>({...initialState,...parsed,
+            eibar:{...initialPorra(),...(parsed.eibar||{})},
+            zumaia:{...initialPorra(),...(parsed.zumaia||{})},
+            matches:parsed.matches||[],
+            adminPassword:parsed.adminPassword||"AD1818",
           }));
         }
       }catch(e){console.log("load error",e);}
       setLoaded(true);
       setTimeout(()=>setSaveReady(true),500);
     })();
-    const channel=supabase.channel('porra_realtime').on('postgres_changes',{event:'UPDATE',schema:'public',table:'porra_state',filter:'id=eq.1'},(payload)=>{
+    const ch=supabase.channel('porra_rt').on('postgres_changes',{event:'UPDATE',schema:'public',table:'porra_state',filter:'id=eq.1'},(payload)=>{
       if(isSaving.current)return;
-      const remote=payload.new?.data;
-      if(remote){
-        const parsed=typeof remote==='string'?JSON.parse(remote):remote;
-        setState({
-          ...initialState,
-          ...parsed,
-          eibar: {...initialPorra(),...(parsed.eibar||{})},
-          zumaia: {...initialPorra(),...(parsed.zumaia||{})},
-          matches: parsed.matches||[],
-          adminPassword: parsed.adminPassword||"AD1818",
-        });
-      }
+      const r=payload.new?.data;
+      if(r){const p=typeof r==='string'?JSON.parse(r):r;setState({...initialState,...p,eibar:{...initialPorra(),...(p.eibar||{})},zumaia:{...initialPorra(),...(p.zumaia||{})},matches:p.matches||[],adminPassword:p.adminPassword||"AD1818"});}
     }).subscribe();
-    return()=>{supabase.removeChannel(channel);};
+    return()=>{supabase.removeChannel(ch);};
   },[]);
 
   useEffect(()=>{
     if(!saveReady)return;
     const t=setTimeout(async()=>{
-      try{
-        isSaving.current=true;
-        await supabase.from('porra_state').upsert({id:1,data:state});
-        setTimeout(()=>{isSaving.current=false;},4000);
-      }catch(e){console.log("save error",e);isSaving.current=false;}
+      try{isSaving.current=true;await supabase.from('porra_state').upsert({id:1,data:state});setTimeout(()=>{isSaving.current=false;},4000);}
+      catch(e){console.log("save error",e);isSaving.current=false;}
     },400);
     return()=>clearTimeout(t);
   },[state,saveReady]);
@@ -1189,14 +1173,6 @@ export default function PorraMundial(){
               whiteSpace:"nowrap"
             }}>🏅 Premios</button>
           </div>
-        </div>
-
-        {/* Botón backup pequeño */}
-        <div style={{textAlign:"center",marginBottom:2}}>
-          <button onClick={()=>{ setExportText(JSON.stringify(state)); setBackupModal(true); setImportText(""); }}
-            style={{padding:"3px 10px",borderRadius:15,border:"1px solid rgba(212,175,55,0.2)",background:"transparent",color:"#666",fontFamily:"sans-serif",fontSize:10,cursor:"pointer"}}>
-            💾 Guardar/Restaurar
-          </button>
         </div>
 
         {/* NAV — sin registro ni admin */}
@@ -2384,7 +2360,7 @@ export default function PorraMundial(){
                     </div>
 
                     {/* Ajuste de puntos */}
-                    <div style={{fontFamily:"sans-serif",fontSize:13,color:"#d4af37",fontWeight:"bold",marginBottom:8}}>⚡ Ajuste manual de puntos</div>
+                    <div style={{fontFamily:"sans-serif",fontSize:13,color:"#d4af37",fontWeight:"bold",marginBottom:8}}>Ajuste manual de puntos</div>
                     {participants.length===0&&<div style={{...S.card,textAlign:"center",padding:20}}><div style={{fontFamily:"sans-serif",color:"#555",fontSize:13}}>Sin participantes</div></div>}
                     {participants.map(p=>{
                       const adjs=Array.isArray(p.manualAdjustments)?p.manualAdjustments:(p.manualPts&&p.manualPts!==0)?[{pts:p.manualPts,reason:p.manualReason||"",date:""}]:[];
@@ -2395,68 +2371,28 @@ export default function PorraMundial(){
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                             <div style={{flex:1,minWidth:0}}>
                               <div style={{fontWeight:"bold",fontSize:14}}>{p.name}</div>
-                              {adjs.length>0&&<div style={{fontSize:11,fontFamily:"sans-serif",color:totalAdj>0?"#4caf50":totalAdj<0?"#ff6b6b":"#888",marginTop:2}}>
-                                {adjs.length} ajuste{adjs.length>1?"s":""}: {totalAdj>0?"+":""}{totalAdj} pts total
-                              </div>}
+                              {adjs.length>0&&<div style={{fontSize:11,fontFamily:"sans-serif",color:totalAdj>0?"#4caf50":totalAdj<0?"#ff6b6b":"#888",marginTop:2}}>{adjs.length} ajuste{adjs.length>1?"s":""}: {totalAdj>0?"+":""}{totalAdj} pts</div>}
                             </div>
                             <div style={{display:"flex",gap:6}}>
-                              <button onClick={()=>{
-                                setConfirmDialog({msg:`¿Eliminar a ${p.name} de la porra?`,onOk:()=>{
-                                  setPorra(prev=>({...prev,participants:prev.participants.filter(x=>x.id!==p.id)}));
-                                  toast_(`${p.name} eliminado`);
-                                }});
-                              }} style={{padding:"4px 10px",borderRadius:8,border:"none",cursor:"pointer",background:"rgba(255,50,50,0.12)",color:"#ff6b6b",fontSize:11,fontFamily:"sans-serif"}}>🗑</button>
-                              <button onClick={()=>{setManualOpen(isOpen?null:p.id);setManualPts(m=>({...m,[p.id]:"0"}));setManualReason(m=>({...m,[p.id]:""}));}}
-                                style={{...S.btn(isOpen),padding:"5px 12px",fontSize:12}}>{isOpen?"Cerrar":"+ Ajuste"}</button>
+                              <button onClick={()=>setConfirmDialog({msg:"Eliminar a "+p.name+"?",onOk:()=>{setPorra(prev=>({...prev,participants:prev.participants.filter(x=>x.id!==p.id)}));toast_(p.name+" eliminado");}})} style={{padding:"4px 10px",borderRadius:8,border:"none",cursor:"pointer",background:"rgba(255,50,50,0.12)",color:"#ff6b6b",fontSize:11,fontFamily:"sans-serif"}}>🗑</button>
+                              <button onClick={()=>{setManualOpen(isOpen?null:p.id);setManualPts(m=>({...m,[p.id]:"0"}));setManualReason(m=>({...m,[p.id]:""}));}} style={{...S.btn(isOpen),padding:"5px 12px",fontSize:12}}>{isOpen?"Cerrar":"+ Ajuste"}</button>
                             </div>
                           </div>
-                          {/* Lista ajustes existentes */}
-                          {adjs.length>0&&(
-                            <div style={{marginTop:8}}>
-                              {adjs.map((a,i)=>(
-                                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
-                                  <span style={{fontFamily:"sans-serif",fontSize:13,fontWeight:"bold",color:a.pts>0?"#4caf50":a.pts<0?"#ff6b6b":"#888",minWidth:36}}>{a.pts>0?"+":""}{a.pts}</span>
-                                  <span style={{fontFamily:"sans-serif",fontSize:12,color:"#888",flex:1}}>{a.reason||"Sin motivo"}</span>
-                                  {a.date&&<span style={{fontFamily:"sans-serif",fontSize:10,color:"#555"}}>{a.date}</span>}
-                                  <button onClick={()=>setConfirmDialog({msg:"Borrar este ajuste de "+p.name+"?",onOk:()=>{
-                                    const na=adjs.filter((_,j)=>j!==i);
-                                    setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:na}:x)}));
-                                    toast_("Ajuste borrado");
-                                    addLog("Ajuste borrado: "+p.name);
-                                  }})} style={{background:"none",border:"none",color:"#ff6b6b",cursor:"pointer",fontSize:16,padding:"0 4px"}}>×</button>
-                                </div>
-                              ))}
+                          {adjs.length>0&&<div style={{marginTop:8}}>{adjs.map((a,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderTop:"1px solid rgba(255,255,255,0.05)"}}><span style={{fontFamily:"sans-serif",fontSize:13,fontWeight:"bold",color:a.pts>0?"#4caf50":a.pts<0?"#ff6b6b":"#888",minWidth:36}}>{a.pts>0?"+":""}{a.pts}</span><span style={{fontFamily:"sans-serif",fontSize:12,color:"#888",flex:1}}>{a.reason||"Sin motivo"}</span>{a.date&&<span style={{fontFamily:"sans-serif",fontSize:10,color:"#555"}}>{a.date}</span>}<button onClick={()=>setConfirmDialog({msg:"Borrar ajuste?",onOk:()=>{const na=adjs.filter((_,j)=>j!==i);setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:na}:x)}));toast_("Ajuste borrado");}})} style={{background:"none",border:"none",color:"#ff6b6b",cursor:"pointer",fontSize:16,padding:"0 4px"}}>x</button></div>)}</div>}
+                          {isOpen&&<div style={{marginTop:10,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+                            <div style={{fontFamily:"sans-serif",fontSize:11,color:"#888",marginBottom:8}}>Nuevo ajuste:</div>
+                            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                              <button onMouseDown={e=>{e.preventDefault();const c=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(c-1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(255,100,100,0.4)",background:"transparent",color:"#ff9a9a",fontSize:22,cursor:"pointer",flexShrink:0}}>-</button>
+                              <input type="text" inputMode="decimal" value={manualPts[p.id]||"0"} onChange={e=>{const v=e.target.value;if(v===""||v==="-"||/^-?[0-9]+[.]?[0-9]*$/.test(v))setManualPts(m=>({...m,[p.id]:v}));}} style={{...S.input,flex:1,padding:"9px",textAlign:"center",fontSize:20,fontWeight:"bold"}}/>
+                              <button onMouseDown={e=>{e.preventDefault();const c=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(c+1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(76,175,80,0.4)",background:"transparent",color:"#a8d8a8",fontSize:22,cursor:"pointer",flexShrink:0}}>+</button>
                             </div>
-                          )}
-                          {/* Formulario nuevo ajuste */}
-                          {isOpen&&(
-                            <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
-                              <div style={{fontFamily:"sans-serif",fontSize:11,color:"#888",marginBottom:8}}>Nuevo ajuste:</div>
-                              <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-                                <button onMouseDown={e=>{e.preventDefault();const c=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(c-1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(255,100,100,0.4)",background:"transparent",color:"#ff9a9a",fontSize:22,cursor:"pointer",flexShrink:0}}>-</button>
-                                <input type="text" inputMode="decimal" value={manualPts[p.id]||"0"} onChange={e=>{const v=e.target.value;if(v===""||v==="-"||/^-?[0-9]+\.?[0-9]*$/.test(v))setManualPts(m=>({...m,[p.id]:v}));}} style={{...S.input,flex:1,padding:"9px",textAlign:"center",fontSize:20,fontWeight:"bold"}}/>
-                                <button onMouseDown={e=>{e.preventDefault();const c=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(c+1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(76,175,80,0.4)",background:"transparent",color:"#a8d8a8",fontSize:22,cursor:"pointer",flexShrink:0}}>+</button>
-                              </div>
-                              <input value={manualReason[p.id]||""} onChange={e=>setManualReason(m=>({...m,[p.id]:e.target.value}))} placeholder="Motivo del ajuste..." style={{...S.input,marginBottom:8,fontSize:13}}/>
-                              <button onClick={()=>{
-                                const val=parseFloat(manualPts[p.id]);
-                                if(isNaN(val))return toast_("Numero invalido","err");
-                                const reason=(manualReason[p.id]||"").trim();
-                                const na=[...adjs,{pts:val,reason:reason,date:new Date().toLocaleDateString("es-ES")}];
-                                setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:na,manualPts:undefined,manualReason:undefined}:x)}));
-                                setManualOpen(null);
-                                toast_(p.name+": "+(val>0?"+":"")+val+" pts anadido");
-                                addLog("Ajuste "+p.name+": "+(val>0?"+":"")+val+" pts"+(reason?" - "+reason:""));
-                              }} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontWeight:"bold",fontFamily:"sans-serif",fontSize:14}}>
-                                Guardar ajuste
-                              </button>
-                            </div>
-                          )}
+                            <input value={manualReason[p.id]||""} onChange={e=>setManualReason(m=>({...m,[p.id]:e.target.value}))} placeholder="Motivo del ajuste..." style={{...S.input,marginBottom:8,fontSize:13}}/>
+                            <button onClick={()=>{const val=parseFloat(manualPts[p.id]);if(isNaN(val))return toast_("Numero invalido","err");const reason=(manualReason[p.id]||"").trim();const na=[...adjs,{pts:val,reason:reason,date:new Date().toLocaleDateString("es-ES")}];setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:na,manualPts:undefined,manualReason:undefined}:x)}));setManualOpen(null);toast_(p.name+": "+(val>0?"+":"")+val+" pts");addLog("Ajuste "+p.name+": "+(val>0?"+":"")+val+" pts"+(reason?" - "+reason:""));}} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontWeight:"bold",fontFamily:"sans-serif",fontSize:14}}>Guardar ajuste</button>
+                          </div>}
                         </div>
                       );
                     })}
-
-                    {/* Eliminar goles */}
+                                        {/* Eliminar goles */}
                     <div style={{fontFamily:"sans-serif",fontSize:13,color:"#d4af37",fontWeight:"bold",marginBottom:8,marginTop:16}}>🗑 Eliminar goles registrados</div>
                     {state.matches.filter(m=>(m.playerGoals||[]).length>0).length===0?(
                       <div style={{...S.card,textAlign:"center",padding:20}}><div style={{fontFamily:"sans-serif",color:"#555",fontSize:13}}>No hay goles registrados aún</div></div>
@@ -2487,73 +2423,6 @@ export default function PorraMundial(){
       </div>
 
       {/* ── MODAL BACKUP ── */}
-      {backupModal&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:2000,display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:20,overflowY:"auto"}}>
-          <div style={{width:"calc(100% - 24px)",maxWidth:460,background:"linear-gradient(160deg,#0d1520,#14081e)",borderRadius:18,border:"1px solid rgba(212,175,55,0.3)",overflow:"hidden",marginBottom:20}}>
-            <div style={{background:"linear-gradient(135deg,rgba(212,175,55,0.15),rgba(255,107,0,0.1))",padding:"16px 18px",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-              <div style={{fontSize:10,letterSpacing:4,color:"#d4af37",textTransform:"uppercase",marginBottom:3}}>Copia de seguridad</div>
-              <div style={{fontSize:18,fontWeight:"bold",color:"#fff"}}>💾 Guardar / Restaurar</div>
-            </div>
-            <div style={{padding:"16px 18px"}}>
-
-              {/* EXPORTAR */}
-              <div style={{marginBottom:20}}>
-                <div style={{fontFamily:"sans-serif",fontSize:13,color:"#d4af37",fontWeight:"bold",marginBottom:6}}>📤 Guardar datos</div>
-                <div style={{fontFamily:"sans-serif",fontSize:12,color:"#888",marginBottom:8}}>
-                  Copia este texto y guárdalo (en notas, email, etc.). Cuando abras la porra de nuevo, pégalo en "Restaurar" para recuperar todo.
-                </div>
-                <textarea readOnly value={exportText}
-                  style={{width:"100%",height:100,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,color:"#aaa",fontFamily:"monospace",fontSize:10,padding:"8px",boxSizing:"border-box",resize:"none",outline:"none"}}
-                />
-                <button onClick={()=>{
-                  try{
-                    navigator.clipboard.writeText(exportText).then(()=>toast_("¡Copiado al portapapeles! ✓")).catch(()=>toast_("Selecciona y copia el texto manualmente","err"));
-                  }catch{ toast_("Selecciona y copia el texto manualmente","err"); }
-                }} style={{width:"100%",marginTop:8,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#d4af37,#ff6b00)",color:"#000",fontSize:14,fontWeight:"bold",fontFamily:"sans-serif"}}>
-                  📋 Copiar al portapapeles
-                </button>
-              </div>
-
-              {/* IMPORTAR */}
-              <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",paddingTop:16}}>
-                <div style={{fontFamily:"sans-serif",fontSize:13,color:"#7b8fff",fontWeight:"bold",marginBottom:6}}>📥 Restaurar datos</div>
-                <div style={{fontFamily:"sans-serif",fontSize:12,color:"#888",marginBottom:8}}>
-                  Pega aquí el texto que guardaste anteriormente para recuperar todos los datos.
-                </div>
-                <textarea value={importText} onChange={e=>setImportText(e.target.value)}
-                  placeholder="Pega aquí el código de backup..."
-                  style={{width:"100%",height:100,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(123,47,255,0.3)",borderRadius:8,color:"#fff",fontFamily:"monospace",fontSize:10,padding:"8px",boxSizing:"border-box",resize:"none",outline:"none"}}
-                />
-                <button onClick={()=>{
-                  try{
-                    const parsed=JSON.parse(importText.trim());
-                    if(!parsed.eibar&&!parsed.participants&&!parsed.matches) throw new Error("formato inválido");
-                    // Handle both old and new format
-                    if(parsed.eibar){
-                      setState({...initialState,...parsed});
-                    } else {
-                      // Old format migration
-                      setState(s=>({...s,matches:parsed.matches||[],eibar:{...initialPorra(),participants:parsed.participants||[],playerList:parsed.playerList||DEFAULT_PLAYERS}}));
-                    }
-                    setBackupModal(false); setImportText("");
-                    toast_(`Datos restaurados ✓`);
-                  }catch(e){
-                    toast_("Código inválido, revisa que lo has copiado completo","err");
-                  }
-                }} style={{width:"100%",marginTop:8,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7b2fff,#00c6ff)",color:"#fff",fontSize:14,fontWeight:"bold",fontFamily:"sans-serif"}}>
-                  📥 Restaurar datos
-                </button>
-              </div>
-
-              <button onClick={()=>setBackupModal(false)}
-                style={{width:"100%",marginTop:12,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:"rgba(255,255,255,0.07)",color:"#ccc",fontSize:14,fontFamily:"sans-serif"}}>
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── MODAL EDITAR PARTICIPANTE ── */}
       {editParticipant&&(()=>{
         const ep = editParticipant;
