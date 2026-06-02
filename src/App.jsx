@@ -476,11 +476,8 @@ function calcScore(participant, allMatches, phase=null){
   }
   total += playerPts(participant, phaseMatches);
   if(!phase){
-    if(Array.isArray(participant.manualAdjustments)){
-      total+=participant.manualAdjustments.reduce((s,a)=>s+(a.pts||0),0);
-    }else if(participant.manualPts){
-      total+=participant.manualPts;
-    }
+    if(Array.isArray(participant.manualAdjustments)){total+=participant.manualAdjustments.reduce((s,a)=>s+(a.pts||0),0);}
+    else if(participant.manualPts){total+=participant.manualPts;}
   }
   // Créditos sobrantes → puntos extra solo en general
   if(!phase){
@@ -685,12 +682,11 @@ export default function PorraMundial(){
       setLoaded(true);
       setTimeout(()=>setSaveReady(true),500);
     })();
-    const channel=supabase.channel('porra_realtime')
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'porra_state',filter:'id=eq.1'},(payload)=>{
-        if(isSaving.current)return;
-        const remote=payload.new?.data;
-        if(remote){const parsed=typeof remote==='string'?JSON.parse(remote):remote;setState(parsed);}
-      }).subscribe();
+    const channel=supabase.channel('porra_realtime').on('postgres_changes',{event:'UPDATE',schema:'public',table:'porra_state',filter:'id=eq.1'},(payload)=>{
+      if(isSaving.current)return;
+      const remote=payload.new?.data;
+      if(remote){const parsed=typeof remote==='string'?JSON.parse(remote):remote;setState(parsed);}
+    }).subscribe();
     return()=>{supabase.removeChannel(channel);};
   },[]);
 
@@ -706,7 +702,7 @@ export default function PorraMundial(){
     return()=>clearTimeout(t);
   },[state,saveReady]);
 
-    const [standingsGroup, setStandingsGroup] = useState("A");
+  const [standingsGroup, setStandingsGroup] = useState("A");
   const [pgSearch, setPgSearch] = useState({});
   const [t1Search, setT1Search] = useState({});
   const [t2Search, setT2Search] = useState({});
@@ -1176,6 +1172,7 @@ export default function PorraMundial(){
             }}>🏅 Premios</button>
           </div>
         </div>
+
         {/* NAV — sin registro ni admin */}
         <div style={{display:"flex",gap:4,padding:"7px 12px",overflowX:"auto"}}>
           {[
@@ -1500,25 +1497,13 @@ export default function PorraMundial(){
                       })()}
                       {/* Ajuste manual visible solo en General */}
                       {classPhase==="General"&&(()=>{
-                        const adjs=Array.isArray(p.manualAdjustments)?p.manualAdjustments
-                          :(p.manualPts!==undefined&&p.manualPts!==null&&(p.manualPts!==0||p.manualReason))
-                            ?[{pts:p.manualPts,reason:p.manualReason||"",date:""}]:[];
-                        if(adjs.length===0)return null;
-                        const totalAdj=adjs.reduce((s,a)=>s+(a.pts||0),0);
-                        return(
-                          <div style={{marginTop:8,padding:"6px 10px",background:"rgba(255,200,0,0.08)",borderRadius:8,border:"1px solid rgba(255,200,0,0.2)"}}>
-                            <div style={{fontFamily:"sans-serif",fontSize:11,color:"#d4af37",marginBottom:adjs.length>1?3:0}}>
-                              Ajustes admin: <b style={{color:totalAdj>0?"#4caf50":totalAdj<0?"#ff6b6b":"#888"}}>{totalAdj>0?"+":""}{totalAdj} pts</b>
-                            </div>
-                            {adjs.map((a,i)=>(
-                              <div key={i} style={{fontFamily:"sans-serif",fontSize:11,color:"#888",marginTop:1}}>
-                                <span style={{color:a.pts>0?"#4caf50":a.pts<0?"#ff6b6b":"#777"}}>{a.pts>0?"+":""}{a.pts}pts</span>
-                                {a.reason&&<span> - {a.reason}</span>}
-                                {a.date&&<span style={{color:"#555"}}> · {a.date}</span>}
-                              </div>
-                            ))}
-                          </div>
-                        );
+                        const adjs=Array.isArray(p.manualAdjustments)?p.manualAdjustments:(p.manualPts&&p.manualPts!==0)?[{pts:p.manualPts,reason:p.manualReason||"",date:""}]:[];
+                        if(!adjs.length)return null;
+                        const tot=adjs.reduce((s,a)=>s+(a.pts||0),0);
+                        return <div style={{marginTop:8,padding:"6px 10px",background:"rgba(255,200,0,0.08)",borderRadius:8,border:"1px solid rgba(255,200,0,0.2)"}}>
+                          <div style={{fontFamily:"sans-serif",fontSize:11,color:"#d4af37"}}>Ajustes: <b style={{color:tot>0?"#4caf50":tot<0?"#ff6b6b":"#888"}}>{tot>0?"+":""}{tot} pts</b></div>
+                          {adjs.map((a,i)=><div key={i} style={{fontFamily:"sans-serif",fontSize:10,color:"#888",marginTop:1}}><span style={{color:a.pts>0?"#4caf50":a.pts<0?"#ff6b6b":"#777"}}>{a.pts>0?"+":""}{a.pts}pts</span>{a.reason&&<span> - {a.reason}</span>}</div>)}
+                        </div>;
                       })()}
                       {/* Cierre del bloque condicional hideTeams */}
                       </>)}
@@ -2376,7 +2361,7 @@ export default function PorraMundial(){
                     <div style={{fontFamily:"sans-serif",fontSize:13,color:"#d4af37",fontWeight:"bold",marginBottom:8}}>Ajuste manual de puntos</div>
                     {participants.length===0&&<div style={{...S.card,textAlign:"center",padding:20}}><div style={{fontFamily:"sans-serif",color:"#555",fontSize:13}}>Sin participantes</div></div>}
                     {participants.map(p=>{
-                      const adjs=Array.isArray(p.manualAdjustments)?p.manualAdjustments:(p.manualPts!==undefined&&p.manualPts!==null&&(p.manualPts!==0||p.manualReason))?[{pts:p.manualPts,reason:p.manualReason||"",date:""}]:[];
+                      const adjs=Array.isArray(p.manualAdjustments)?p.manualAdjustments:(p.manualPts&&p.manualPts!==0)?[{pts:p.manualPts,reason:p.manualReason||"",date:""}]:[];
                       const totalAdj=adjs.reduce((s,a)=>s+(a.pts||0),0);
                       const isOpen=manualOpen===p.id;
                       return(
@@ -2388,35 +2373,20 @@ export default function PorraMundial(){
                             </div>
                             <button onClick={()=>{setManualOpen(isOpen?null:p.id);setManualPts(m=>({...m,[p.id]:"0"}));setManualReason(m=>({...m,[p.id]:""}));}} style={{...S.btn(isOpen),padding:"5px 12px",fontSize:12}}>{isOpen?"Cerrar":"+ Ajuste"}</button>
                           </div>
-                          {adjs.length>0&&(
-                            <div style={{marginTop:8}}>
-                              {adjs.map((a,i)=>(
-                                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
-                                  <span style={{fontFamily:"sans-serif",fontSize:13,fontWeight:"bold",color:a.pts>0?"#4caf50":a.pts<0?"#ff6b6b":"#888",minWidth:36}}>{a.pts>0?"+":""}{a.pts}</span>
-                                  <span style={{fontFamily:"sans-serif",fontSize:12,color:"#888",flex:1}}>{a.reason||"Sin motivo"}</span>
-                                  {a.date&&<span style={{fontFamily:"sans-serif",fontSize:10,color:"#555"}}>{a.date}</span>}
-                                  <button onClick={()=>setConfirmDialog({msg:"Borrar ajuste de "+p.name+"?",onOk:()=>{const newAdjs=adjs.filter((_,j)=>j!==i);setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:newAdjs}:x)}));toast_("Ajuste borrado");addLog("Ajuste borrado: "+p.name);}})} style={{background:"none",border:"none",color:"#ff6b6b",cursor:"pointer",fontSize:16,padding:"0 4px"}}>x</button>
-                                </div>
-                              ))}
+                          {adjs.length>0&&<div style={{marginTop:8}}>{adjs.map((a,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderTop:"1px solid rgba(255,255,255,0.05)"}}><span style={{fontFamily:"sans-serif",fontSize:13,fontWeight:"bold",color:a.pts>0?"#4caf50":a.pts<0?"#ff6b6b":"#888",minWidth:36}}>{a.pts>0?"+":""}{a.pts}</span><span style={{fontFamily:"sans-serif",fontSize:12,color:"#888",flex:1}}>{a.reason||"Sin motivo"}</span>{a.date&&<span style={{fontFamily:"sans-serif",fontSize:10,color:"#555"}}>{a.date}</span>}<button onClick={()=>setConfirmDialog({msg:"Borrar ajuste de "+p.name+"?",onOk:()=>{const na=adjs.filter((_,j)=>j!==i);setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:na}:x)}));toast_("Ajuste borrado");addLog("Ajuste borrado: "+p.name);}})} style={{background:"none",border:"none",color:"#ff6b6b",cursor:"pointer",fontSize:16,padding:"0 4px"}}>x</button></div>)}</div>}
+                          {isOpen&&<div style={{marginTop:10,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+                            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                              <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur-1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(255,100,100,0.4)",background:"transparent",color:"#ff9a9a",fontSize:22,cursor:"pointer",flexShrink:0}}>-</button>
+                              <input type="text" inputMode="decimal" value={manualPts[p.id]||"0"} onChange={e=>{const v=e.target.value;if(v===""||v==="-"||/^-?[0-9]+[.]?[0-9]*$/.test(v))setManualPts(m=>({...m,[p.id]:v}));}} style={{...S.input,flex:1,padding:"9px",textAlign:"center",fontSize:20,fontWeight:"bold"}}/>
+                              <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur+1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(76,175,80,0.4)",background:"transparent",color:"#a8d8a8",fontSize:22,cursor:"pointer",flexShrink:0}}>+</button>
                             </div>
-                          )}
-                          {isOpen&&(
-                            <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
-                              <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-                                <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur-1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(255,100,100,0.4)",background:"transparent",color:"#ff9a9a",fontSize:22,cursor:"pointer",flexShrink:0}}>-</button>
-                                <input type="text" inputMode="decimal" value={manualPts[p.id]||"0"} onChange={e=>{const v=e.target.value;if(v===""||v==="-"||/^-?[0-9]+[.]?[0-9]*$/.test(v))setManualPts(m=>({...m,[p.id]:v}));}} style={{...S.input,flex:1,padding:"9px",textAlign:"center",fontSize:20,fontWeight:"bold"}}/>
-                                <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur+1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(76,175,80,0.4)",background:"transparent",color:"#a8d8a8",fontSize:22,cursor:"pointer",flexShrink:0}}>+</button>
-                              </div>
-                              <input value={manualReason[p.id]||""} onChange={e=>setManualReason(m=>({...m,[p.id]:e.target.value}))} placeholder="Motivo del ajuste..." style={{...S.input,marginBottom:8,fontSize:13}}/>
-                              <button onClick={()=>{const val=parseFloat(manualPts[p.id]);if(isNaN(val))return toast_("Numero invalido","err");const reason=(manualReason[p.id]||"").trim();const newAdj={pts:val,reason:reason,date:new Date().toLocaleDateString("es-ES")};const newAdjs=[...adjs,newAdj];setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:newAdjs,manualPts:undefined,manualReason:undefined}:x)}));setManualOpen(null);toast_(p.name+": "+(val>0?"+":"")+val+" pts");addLog("Ajuste "+p.name+": "+(val>0?"+":"")+val+" pts"+(reason?" - "+reason:""));}} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontWeight:"bold",fontFamily:"sans-serif",fontSize:14}}>
-                                Guardar ajuste
-                              </button>
-                            </div>
-                          )}
+                            <input value={manualReason[p.id]||""} onChange={e=>setManualReason(m=>({...m,[p.id]:e.target.value}))} placeholder="Motivo del ajuste..." style={{...S.input,marginBottom:8,fontSize:13}}/>
+                            <button onClick={()=>{const val=parseFloat(manualPts[p.id]);if(isNaN(val))return toast_("Numero invalido","err");const reason=(manualReason[p.id]||"").trim();const newAdjs=[...adjs,{pts:val,reason:reason,date:new Date().toLocaleDateString("es-ES")}];setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:newAdjs,manualPts:undefined,manualReason:undefined}:x)}));setManualOpen(null);toast_(p.name+": "+(val>0?"+":"")+val+" pts");addLog("Ajuste "+p.name+": "+(val>0?"+":"")+val+" pts"+(reason?" - "+reason:""));}} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontWeight:"bold",fontFamily:"sans-serif",fontSize:14}}>Guardar ajuste</button>
+                          </div>}
                         </div>
                       );
                     })}
-                    {/* Eliminar goles */}
+                                        {/* Eliminar goles */}
                     <div style={{fontFamily:"sans-serif",fontSize:13,color:"#d4af37",fontWeight:"bold",marginBottom:8,marginTop:16}}>🗑 Eliminar goles registrados</div>
                     {state.matches.filter(m=>(m.playerGoals||[]).length>0).length===0?(
                       <div style={{...S.card,textAlign:"center",padding:20}}><div style={{fontFamily:"sans-serif",color:"#555",fontSize:13}}>No hay goles registrados aún</div></div>
