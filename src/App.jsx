@@ -2288,7 +2288,7 @@ export default function PorraMundial(){
                               <input type="text" inputMode="decimal" value={cfg.boteTotal??300}
                                 onChange={e=>{
                                   const v=e.target.value;
-                                  if(v===""||/^\d*\.?\d*$/.test(v))
+                                  if(v===""||/^[0-9]*[.,]?[0-9]*$/.test(v))
                                     setPorra(pr=>({...pr,premiosConfig:{...pr.premiosConfig,boteTotal:v===""?0:parseFloat(v)}}));
                                 }}
                                 style={{...S.input,flex:1,padding:"8px",textAlign:"center"}}/>
@@ -2301,7 +2301,7 @@ export default function PorraMundial(){
                             <input type="text" inputMode="decimal" value={cfg.phasePrize??5}
                               onChange={e=>{
                                 const v=e.target.value;
-                                if(v===""||/^\d*\.?\d*$/.test(v))
+                                if(v===""||/^[0-9]*[.,]?[0-9]*$/.test(v))
                                   setPorra(pr=>({...pr,premiosConfig:{...pr.premiosConfig,phasePrize:v===""?0:parseFloat(v)}}));
                               }}
                               style={{...S.input,padding:"8px",textAlign:"center"}}/>
@@ -2316,7 +2316,7 @@ export default function PorraMundial(){
                                   <input type="text" inputMode="decimal" value={pct}
                                     onChange={e=>{
                                       const v=e.target.value;
-                                      if(v===""||/^\d*\.?\d*$/.test(v)){
+                                      if(v===""||/^[0-9]*[.,]?[0-9]*$/.test(v)){
                                         const newPcts=[...(cfg.generalPct||[45,32,14,9])];
                                         newPcts[i]=v===""?0:parseFloat(v);
                                         setPorra(pr=>({...pr,premiosConfig:{...pr.premiosConfig,generalPct:newPcts}}));
@@ -2440,7 +2440,7 @@ export default function PorraMundial(){
                                 <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur-1)}));}}
                                   style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(255,100,100,0.4)",background:"transparent",color:"#ff9a9a",fontSize:22,cursor:"pointer",flexShrink:0}}>−</button>
                                 <input type="text" inputMode="decimal" value={manualPts[p.id]||"0"}
-                                  onChange={e=>{const val=e.target.value;if(/^-?\d*\.?\d*$/.test(val)||val==="-"||val==="")setManualPts(m=>({...m,[p.id]:val}));}}
+                                  onChange={e=>{const val=e.target.value;if(/^-?[0-9]*[.,]?[0-9]*$/.test(val)||val==="-"||val==="")setManualPts(m=>({...m,[p.id]:val}));}}
                                   style={{...S.input,flex:1,padding:"9px",textAlign:"center",fontSize:20,fontWeight:"bold"}}/>
                                 <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur+1)}));}}
                                   style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(76,175,80,0.4)",background:"transparent",color:"#a8d8a8",fontSize:22,cursor:"pointer",flexShrink:0}}>+</button>
