@@ -1401,8 +1401,9 @@ export default function PorraMundial(){
                   <button onClick={()=>setRegStep(1)} style={{flex:1,padding:"11px",borderRadius:10,border:"1px solid rgba(255,255,255,0.12)",background:"transparent",color:"#aaa",fontFamily:"sans-serif",cursor:"pointer"}}>← Atrás</button>
                   <button onClick={()=>{
                     if(newUser.teams.length!==12) return toast_("Elige exactamente 12 equipos","err");
-                    if(remaining<0) return toast_("Te has pasado de 80 créditoss","err");
+                    if(remaining<0) return toast_("Te has pasado de 80 creditos","err");
                     setRegStep(3);
+                  }} style={{flex:2,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#d4af37,#ff6b00)",color:"#000",fontWeight:"bold",fontFamily:"sans-serif",cursor:"pointer"}}>Siguiente →</button>
                 </div>
               </div>
               );
