@@ -676,7 +676,15 @@ export default function PorraMundial(){
         const {data,error}=await supabase.from('porra_state').select('data').eq('id',1).single();
         if(!error&&data?.data){
           const parsed=typeof data.data==='string'?JSON.parse(data.data):data.data;
-          setState(s=>({...initialState,...parsed}));
+          // Merge con initialState para garantizar que todas las claves existen
+          setState(s=>({
+            ...initialState,
+            ...parsed,
+            eibar: {...initialPorra(),...(parsed.eibar||{})},
+            zumaia: {...initialPorra(),...(parsed.zumaia||{})},
+            matches: parsed.matches||[],
+            adminPassword: parsed.adminPassword||"AD1818",
+          }));
         }
       }catch(e){console.log("load error",e);}
       setLoaded(true);
@@ -685,7 +693,17 @@ export default function PorraMundial(){
     const channel=supabase.channel('porra_realtime').on('postgres_changes',{event:'UPDATE',schema:'public',table:'porra_state',filter:'id=eq.1'},(payload)=>{
       if(isSaving.current)return;
       const remote=payload.new?.data;
-      if(remote){const parsed=typeof remote==='string'?JSON.parse(remote):remote;setState(parsed);}
+      if(remote){
+        const parsed=typeof remote==='string'?JSON.parse(remote):remote;
+        setState({
+          ...initialState,
+          ...parsed,
+          eibar: {...initialPorra(),...(parsed.eibar||{})},
+          zumaia: {...initialPorra(),...(parsed.zumaia||{})},
+          matches: parsed.matches||[],
+          adminPassword: parsed.adminPassword||"AD1818",
+        });
+      }
     }).subscribe();
     return()=>{supabase.removeChannel(channel);};
   },[]);
