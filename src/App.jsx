@@ -29,9 +29,9 @@ const THEMES = {
 
 // Créditos por selección
 const KREDITU = {
-  // 13k — solo 1 permitido
+  // 13k - solo 1 permitido
   "España":13,"Francia":13,"Argentina":13,"Inglaterra":13,
-  // 11k — solo 1 permitido
+  // 11k - solo 1 permitido
   "Brasil":11,"Marruecos":11,"Alemania":11,"Países Bajos":11,"Bélgica":11,"Portugal":11,
   // 9k
   "México":9,"Estados Unidos":9,"Uruguay":9,"Senegal":9,"Colombia":9,"Croacia":9,
@@ -268,7 +268,7 @@ const GROUP_MATCHES_CHRONO = [...GROUP_MATCHES].sort((a,b)=>{
 });
 
 const R32 = [
-  // Dieciseisavos — hora española CEST (UTC+2), según calendario oficial FIFA
+  // Dieciseisavos - hora española CEST (UTC+2), según calendario oficial FIFA
   {id:"R32-1", label:"P73", desc:"2º A vs 2º B",     date:"28 Jun",time:"21:00",phase:"Dieciseisavos"},
   {id:"R32-2", label:"P74", desc:"1º E vs Mejor 3º", date:"29 Jun",time:"22:30",phase:"Dieciseisavos"},
   {id:"R32-3", label:"P75", desc:"1º F vs 2º C",     date:"30 Jun",time:"03:00",phase:"Dieciseisavos"},
@@ -287,7 +287,7 @@ const R32 = [
   {id:"R32-16",label:"P88", desc:"2º D vs 2º G",     date:"03 Jul",time:"20:00",phase:"Dieciseisavos"},
 ];
 const R16 = [
-  // Octavos — hora española CEST
+  // Octavos - hora española CEST
   {id:"R16-1",label:"P89",desc:"G.P74 vs G.P77",date:"04 Jul",time:"23:00",phase:"Octavos"},
   {id:"R16-2",label:"P90",desc:"G.P73 vs G.P75",date:"04 Jul",time:"19:00",phase:"Octavos"},
   {id:"R16-3",label:"P91",desc:"G.P76 vs G.P78",date:"05 Jul",time:"22:00",phase:"Octavos"},
@@ -298,14 +298,14 @@ const R16 = [
   {id:"R16-8",label:"P96",desc:"G.P85 vs G.P87",date:"07 Jul",time:"22:00",phase:"Octavos"},
 ];
 const QF = [
-  // Cuartos — hora española CEST
+  // Cuartos - hora española CEST
   {id:"QF-1",label:"CF1",desc:"G.P89 vs G.P90",date:"09 Jul",time:"22:00",phase:"Cuartos"},
   {id:"QF-2",label:"CF2",desc:"G.P93 vs G.P94",date:"10 Jul",time:"21:00",phase:"Cuartos"},
   {id:"QF-3",label:"CF3",desc:"G.P91 vs G.P92",date:"11 Jul",time:"23:00",phase:"Cuartos"},
   {id:"QF-4",label:"CF4",desc:"G.P95 vs G.P96",date:"12 Jul",time:"03:00",phase:"Cuartos"},
 ];
 const SF = [
-  // Semifinales — hora española CEST (~02:00, partido 21h ET en Dallas/Atlanta)
+  // Semifinales - hora española CEST (~02:00, partido 21h ET en Dallas/Atlanta)
   {id:"SF-1",label:"SF1",desc:"G.CF1 vs G.CF2",date:"14 Jul",time:"02:00",phase:"Semifinal"},
   {id:"SF-2",label:"SF2",desc:"G.CF3 vs G.CF4",date:"15 Jul",time:"02:00",phase:"Semifinal"},
 ];
@@ -343,20 +343,20 @@ function calcBracket(matches) {
   // ── DIECISEISAVOS: solo si los 72 partidos de grupos están jugados ──
   if (phaseComplete("Grupos", 72)) {
     result["R32-1"]  = { team1: pos("A",1),   team2: pos("B",1) };
-    result["R32-2"]  = { team1: pos("E",0),   team2: null }; // P74: Mejor 3º — rellenar al terminar grupos
+    result["R32-2"]  = { team1: pos("E",0),   team2: null }; // P74: Mejor 3º - rellenar al terminar grupos
     result["R32-3"]  = { team1: pos("F",0),   team2: pos("C",1) };
     result["R32-4"]  = { team1: pos("C",0),   team2: pos("F",1) };
-    result["R32-5"]  = { team1: pos("I",0),   team2: null }; // P77: Mejor 3º — rellenar al terminar grupos
+    result["R32-5"]  = { team1: pos("I",0),   team2: null }; // P77: Mejor 3º - rellenar al terminar grupos
     result["R32-6"]  = { team1: pos("E",1),   team2: pos("I",1) };
-    result["R32-7"]  = { team1: pos("A",0),   team2: null }; // P79: Mejor 3º — rellenar al terminar grupos
-    result["R32-8"]  = { team1: pos("L",0),   team2: null }; // P80: Mejor 3º — rellenar al terminar grupos
-    result["R32-9"]  = { team1: pos("D",0),   team2: null }; // P81: Mejor 3º — rellenar al terminar grupos
-    result["R32-10"] = { team1: pos("G",0),   team2: null }; // P82: Mejor 3º — rellenar al terminar grupos
+    result["R32-7"]  = { team1: pos("A",0),   team2: null }; // P79: Mejor 3º - rellenar al terminar grupos
+    result["R32-8"]  = { team1: pos("L",0),   team2: null }; // P80: Mejor 3º - rellenar al terminar grupos
+    result["R32-9"]  = { team1: pos("D",0),   team2: null }; // P81: Mejor 3º - rellenar al terminar grupos
+    result["R32-10"] = { team1: pos("G",0),   team2: null }; // P82: Mejor 3º - rellenar al terminar grupos
     result["R32-11"] = { team1: pos("K",1),   team2: pos("L",1) };
     result["R32-12"] = { team1: pos("H",0),   team2: pos("J",1) };
-    result["R32-13"] = { team1: pos("B",0),   team2: null }; // P85: Mejor 3º — rellenar al terminar grupos
+    result["R32-13"] = { team1: pos("B",0),   team2: null }; // P85: Mejor 3º - rellenar al terminar grupos
     result["R32-14"] = { team1: pos("J",0),   team2: pos("H",1) };
-    result["R32-15"] = { team1: pos("K",0),   team2: null }; // P87: Mejor 3º — rellenar al terminar grupos
+    result["R32-15"] = { team1: pos("K",0),   team2: null }; // P87: Mejor 3º - rellenar al terminar grupos
     result["R32-16"] = { team1: pos("D",1),   team2: pos("G",1) };
   }
 
@@ -401,7 +401,7 @@ const SC = {win:3,draw:1,goalFor:0.5,goalAgainst:-0.25,phaseAdvance:2,winFinal:8
 const norm = s => s?.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"") || "";
 
 // Puntos de un equipo en un partido (resultado + goles)
-// Sin bonus de pasar de fase — ese se calcula aparte
+// Sin bonus de pasar de fase - ese se calcula aparte
 function matchPtsForTeamBase(m, team){
   const isT1=m.team1===team, isT2=m.team2===team;
   if(!isT1&&!isT2) return 0;
@@ -436,7 +436,7 @@ function groupQualBonus(team, matches){
   const pos = standing.findIndex(t=>t.team===team);
   if(pos===0||pos===1) return SC.phaseAdvance; // 1º o 2º → +2
   if(pos===2){
-    // Tercer clasificado — +2 solo si está entre los 8 mejores
+    // Tercer clasificado - +2 solo si está entre los 8 mejores
     const thirds = bestThirds(matches);
     const best8 = thirds.slice(0,8).map(t=>t.team);
     if(best8.includes(team)) return SC.phaseAdvance;
@@ -444,7 +444,7 @@ function groupQualBonus(team, matches){
   return 0;
 }
 
-// Puntos de jugadores — cuenta goles en todos los partidos (played o no)
+// Puntos de jugadores - cuenta goles en todos los partidos (played o no)
 // Los goles son hechos reales, independientemente de si el resultado está guardado
 function playerPts(participant, matches){
   let total=0;
@@ -468,7 +468,7 @@ function calcScore(participant, allMatches, phase=null){
       if(!phase) total += phaseBonus(m, t);
     }
   }
-  // +2 por clasificar desde grupos — solo en general, una vez por equipo
+  // +2 por clasificar desde grupos - solo en general, una vez por equipo
   if(!phase){
     for(const t of participant.teams){
       total += groupQualBonus(t, allMatches);
@@ -619,7 +619,7 @@ const initialPorra = () => ({
 });
 const initialState = {
   matches: [],
-  adminPassword: "AD1818",  // contraseña admin — se puede cambiar desde el panel
+  adminPassword: "AD1818",  // contraseña admin - se puede cambiar desde el panel
   eibar: initialPorra(),
   zumaia: initialPorra(),
 };
@@ -689,7 +689,7 @@ export default function PorraMundial(){
       setTimeout(()=>setSaveReady(true), 500);
     })();
 
-    // Realtime — ignora updates mientras estamos guardando (isSaving)
+    // Realtime - ignora updates mientras estamos guardando (isSaving)
     const channel = supabase
       .channel('porra_realtime')
       .on('postgres_changes',
@@ -872,13 +872,13 @@ export default function PorraMundial(){
       const pgGoals=(m.playerGoals||[]).filter(pg=>playersList.some(p=>norm(p)===norm(pg.player)));
       if(pgGoals.length>0){
         const g=pgGoals.reduce((a,n)=>{a[n.player]=(a[n.player]||0)+1;return a},{});
-        bd.push(`ℹ️ Tus jugadores marcaron: ${Object.entries(g).map(([n,c])=>`${n}(${c}⚽)`).join(", ")} — ver desglose jugadores`);
+        bd.push(`ℹ️ Tus jugadores marcaron: ${Object.entries(g).map(([n,c])=>`${n}(${c}⚽)`).join(", ")} - ver desglose jugadores`);
       }
 
       totalPts+=pts;
       rows.push({matchId:m.id,phase:m.phase,date:m.date||"",rival,gf,gc,result:`${gf}–${gc}`,pts:Math.round(pts*100)/100,bd});
     }
-    // Bonus clasificar desde grupos — solo en general, al final
+    // Bonus clasificar desde grupos - solo en general, al final
     if(!phase){
       const qb = groupQualBonus(team, state.matches);
       if(qb>0){
@@ -913,7 +913,7 @@ export default function PorraMundial(){
   const filteredTeams=(groupFilter==="Todos"?TEAMS_BY_KREDITU:GROUPS[groupFilter]||[]).filter(t=>t.toLowerCase().includes(searchTeam.toLowerCase()));
   const filteredPlayers=(playerList).filter(p=>p.toLowerCase().includes(searchPlayer.toLowerCase()));
 
-  // ── Helper goles jugadores — función normal, NO componente React (evita re-mount y pérdida de foco) ──
+  // ── Helper goles jugadores - función normal, NO componente React (evita re-mount y pérdida de foco) ──
   const pgBlock = (matchId)=>{
     const r = getResult(matchId);
     const pl = playerList || DEFAULT_PLAYERS;
@@ -982,7 +982,7 @@ export default function PorraMundial(){
   };
   const sortBracket = arr => [...arr].sort((a,b) => bracketSortKey(a) - bracketSortKey(b));
 
-  // Avatar fantasy para jugadores — color único por nombre
+  // Avatar fantasy para jugadores - color único por nombre
   const playerAvatar = (name) => {
     let hash = 0;
     for(let i=0;i<name.length;i++) hash = name.charCodeAt(i) + ((hash<<5)-hash);
@@ -1166,7 +1166,7 @@ export default function PorraMundial(){
               {T.emoji} {T.name}
             </h1>
             <div style={{width:30,height:2,background:T.primaryGrad,margin:"4px auto 0"}}/>
-            {/* Botón cambiar de porra — solo si no vino por URL directa */}
+            {/* Botón cambiar de porra - solo si no vino por URL directa */}
             {!new URLSearchParams(window.location.search).get("porra")&&(
               <button onClick={()=>setActivePorra(null)} style={{marginTop:4,padding:"2px 8px",borderRadius:10,border:`1px solid ${T.accentBorder}`,background:"transparent",color:T.primary,fontFamily:"sans-serif",fontSize:10,cursor:"pointer"}}>
                 ↩ Cambiar porra
@@ -1193,7 +1193,7 @@ export default function PorraMundial(){
 
 
 
-        {/* NAV — sin registro ni admin */}
+        {/* NAV - sin registro ni admin */}
         <div style={{display:"flex",gap:4,padding:"7px 12px",overflowX:"auto"}}>
           {[
             {id:"home",label:"Inicio"},
@@ -1210,7 +1210,7 @@ export default function PorraMundial(){
         {/* ── HOME ── */}
         {view==="home"&&(
           <div style={{padding:"6px 12px"}}>
-            {/* Contador regresivo — se oculta cuando empieza el Mundial */}
+            {/* Contador regresivo - se oculta cuando empieza el Mundial */}
             {countdown&&(
             <div style={{...S.card,textAlign:"center",background:"linear-gradient(135deg,rgba(212,175,55,0.1),rgba(255,107,0,0.08))",border:"1px solid rgba(212,175,55,0.25)",marginBottom:8,padding:"14px"}}>
               <div style={{fontFamily:"sans-serif",fontSize:10,color:"#888",letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>Inicio del Mundial</div>
@@ -1530,7 +1530,7 @@ export default function PorraMundial(){
                             {adjs.map((a,i)=>(
                               <div key={i} style={{fontFamily:"sans-serif",fontSize:11,color:"#888",marginTop:1}}>
                                 <span style={{color:a.pts>0?"#4caf50":a.pts<0?"#ff6b6b":"#777"}}>{a.pts>0?"+":""}{a.pts}pts</span>
-                                {a.reason&&<span> — {a.reason}</span>}
+                                {a.reason&&<span> - {a.reason}</span>}
                                 {a.date&&<span style={{color:"#555"}}> · {a.date}</span>}
                               </div>
                             ))}
@@ -1559,7 +1559,7 @@ export default function PorraMundial(){
                   </div>
                   <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
                     <table style={{borderCollapse:"collapse",fontFamily:"sans-serif",fontSize:11}}>
-                      {/* Cabecera — participantes en columnas */}
+                      {/* Cabecera - participantes en columnas */}
                       <thead>
                         <tr>
                           {/* Celda esquina */}
@@ -1581,7 +1581,7 @@ export default function PorraMundial(){
                           const isUnique = count===1;
                           return(
                             <tr key={t} style={{background:ti%2===0?"rgba(255,255,255,0.02)":"transparent"}}>
-                              {/* Equipo — sticky izquierda */}
+                              {/* Equipo - sticky izquierda */}
                               <td style={{padding:"4px 6px",whiteSpace:"nowrap",position:"sticky",left:0,background:ti%2===0?"#0e1622":"#0d1520",zIndex:1,borderBottom:"1px solid rgba(255,255,255,0.05)",borderRight:"1px solid rgba(255,255,255,0.08)"}}>
                                 <div style={{display:"flex",alignItems:"center",gap:4}}>
                                   <span style={{fontSize:13}}>{flag(t)}</span>
@@ -1677,7 +1677,7 @@ export default function PorraMundial(){
                   }}>
                     <div style={{display:"flex",alignItems:"center",gap:10}}>
                       <div style={{fontSize:i<3&&d.totalGoals>0?20:14,minWidth:28,textAlign:"center",flexShrink:0}}>
-                        {d.totalGoals>0?["🥇","🥈","🥉"][i]||`${i+1}º`:"—"}
+                        {d.totalGoals>0?["🥇","🥈","🥉"][i]||`${i+1}º`:"-"}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
@@ -1980,7 +1980,7 @@ export default function PorraMundial(){
               </div>
             ):(
               <div>
-                {/* Selector de porra en admin — siempre visible para el admin */}
+                {/* Selector de porra en admin - siempre visible para el admin */}
                 <div style={{...S.card,marginBottom:10,background:T.accent||"rgba(255,255,255,0.04)",border:`1px solid ${T.accentBorder}`}}>
                   <div style={{fontFamily:"sans-serif",fontSize:11,color:"#888",marginBottom:6}}>Gestionando:</div>
                   <div style={{display:"flex",gap:6}}>
@@ -2368,8 +2368,8 @@ export default function PorraMundial(){
                           </div>
                           <div style={{fontFamily:"sans-serif",fontSize:11,color:"#666"}}>
                             {porra.hideTeams
-                              ? "Activado — los usuarios no ven los equipos ni jugadores de los demás"
-                              : "Desactivado — todos ven los equipos de los demás"}
+                              ? "Activado - los usuarios no ven los equipos ni jugadores de los demás"
+                              : "Desactivado - todos ven los equipos de los demás"}
                           </div>
                         </div>
                         <button onClick={()=>setPorra(p=>({...p,hideTeams:!p.hideTeams}))} style={{
@@ -2425,7 +2425,7 @@ export default function PorraMundial(){
                                     const newAdjs = adjs.filter((_,j)=>j!==i);
                                     setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:newAdjs}:x)}));
                                     toast_("Ajuste borrado");
-                                    addLog(`⚡ Ajuste de ${p.name} borrado: ${a.pts>0?"+":""}${a.pts}pts${a.reason?" — "+a.reason:""}`);
+                                    addLog(`⚡ Ajuste de ${p.name} borrado: ${a.pts>0?"+":""}${a.pts}pts${a.reason?" - "+a.reason:""}`);
                                   }})} style={{background:"none",border:"none",color:"#ff6b6b",cursor:"pointer",fontSize:16,padding:"0 4px"}}>×</button>
                                 </div>
                               ))}
@@ -2437,13 +2437,11 @@ export default function PorraMundial(){
                             <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
                               <div style={{fontFamily:"sans-serif",fontSize:11,color:"#888",marginBottom:8}}>Nuevo ajuste:</div>
                               <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-                                <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur-1)}));}}
-                                  style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(255,100,100,0.4)",background:"transparent",color:"#ff9a9a",fontSize:22,cursor:"pointer",flexShrink:0}}>−</button>
+                                <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur-1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(255,100,100,0.4)",background:"transparent",color:"#ff9a9a",fontSize:22,cursor:"pointer",flexShrink:0}}>-</button>
                                 <input type="text" inputMode="decimal" value={manualPts[p.id]||"0"}
                                   onChange={e=>{const val=e.target.value;if(/^-?[0-9]*[.,]?[0-9]*$/.test(val)||val==="-"||val==="")setManualPts(m=>({...m,[p.id]:val}));}}
                                   style={{...S.input,flex:1,padding:"9px",textAlign:"center",fontSize:20,fontWeight:"bold"}}/>
-                                <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur+1)}));}}
-                                  style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(76,175,80,0.4)",background:"transparent",color:"#a8d8a8",fontSize:22,cursor:"pointer",flexShrink:0}}>+</button>
+                                <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur+1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(76,175,80,0.4)",background:"transparent",color:"#a8d8a8",fontSize:22,cursor:"pointer",flexShrink:0}}>+</button>
                               </div>
                               <input value={manualReason[p.id]||""} onChange={e=>setManualReason(m=>({...m,[p.id]:e.target.value}))}
                                 placeholder="Motivo del ajuste..."
@@ -2457,7 +2455,7 @@ export default function PorraMundial(){
                                   setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:newAdjs,manualPts:undefined,manualReason:undefined}:x)}));
                                   setManualOpen(null);
                                   toast_(`${p.name}: ${val>0?"+":""}${val} pts añadido ✓`);
-                                  addLog(`⚡ Ajuste ${p.name}: ${val>0?"+":""}${val} pts${reason?" — "+reason:""}`);
+                                  addLog(`⚡ Ajuste ${p.name}: ${val>0?"+":""}${val} pts${reason?" - "+reason:""}`);
                                 }} style={{flex:2,padding:"10px",borderRadius:9,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontWeight:"bold",fontFamily:"sans-serif",fontSize:14}}>
                                   ✓ Guardar ajuste
                                 </button>
