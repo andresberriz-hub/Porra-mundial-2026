@@ -1620,7 +1620,16 @@ export default function PorraMundial(){
 
         {/* ── GOLEADORES ── */}
         {view==="goleadores"&&(()=>{
-          // Recopilar todos los jugadores elegidos por participantes (únicos, normalizados)
+          // Si modo secreto activo, ocultar lista
+          if(porra.hideTeams && !adminUnlocked) return(
+            <div style={{padding:"6px 12px"}}>
+              <div style={{textAlign:"center",padding:"40px 20px",fontFamily:"sans-serif"}}>
+                <div style={{fontSize:36,marginBottom:12}}>🔒</div>
+                <div style={{fontSize:15,color:"#fff",fontWeight:"bold",marginBottom:8}}>Goleadores ocultos</div>
+                <div style={{fontSize:13,color:"#888"}}>La lista de goleadores estará visible cuando el administrador desactive el modo secreto.</div>
+              </div>
+            </div>
+          );
           const chosenPlayers = [...new Set(
             participants.flatMap(p=>p.players)
           )].sort();
