@@ -721,9 +721,6 @@ export default function PorraMundial(){
   const [manualPts, setManualPts] = useState({});
   const [manualReason, setManualReason] = useState({});
   const [confirmDialog, setConfirmDialog] = useState(null);
-  const [backupModal, setBackupModal] = useState(false);
-  const [importText, setImportText] = useState("");
-  const [exportText, setExportText] = useState("");
   const [nuevoAviso, setNuevoAviso] = useState({titulo:"",texto:"",tipo:"info"});
   const [editParticipant, setEditParticipant] = useState(null);
   const [editSearch, setEditSearch] = useState("");
@@ -856,8 +853,11 @@ export default function PorraMundial(){
       if(!phase && m.phase!=="Grupos"){
         const winner=m.score1>m.score2?m.team1:m.score2>m.score1?m.team2:(m.penWinner||null);
         if(winner===team){
-          pts+=2; bd.push("Pasa de fase +2");
-          if(m.phase==="Final"){pts+=8;bd.push("¡Campeón! +8");}
+          if(m.phase==="Final"){
+            pts+=8; bd.push("¡Campeón! +8"); // Final: solo +8, sin +2
+          } else {
+            pts+=2; bd.push("Pasa de fase +2");
+          }
         } else if(winner) bd.push("Eliminado +0");
       }
 
@@ -1184,13 +1184,7 @@ export default function PorraMundial(){
           </div>
         </div>
 
-        {/* Botón backup pequeño */}
-        <div style={{textAlign:"center",marginBottom:2}}>
-          <button onClick={()=>{ setExportText(JSON.stringify(state)); setBackupModal(true); setImportText(""); }}
-            style={{padding:"3px 10px",borderRadius:15,border:"1px solid rgba(212,175,55,0.2)",background:"transparent",color:"#666",fontFamily:"sans-serif",fontSize:10,cursor:"pointer"}}>
-            💾 Guardar/Restaurar
-          </button>
-        </div>
+
 
         {/* NAV — sin registro ni admin */}
         <div style={{display:"flex",gap:4,padding:"7px 12px",overflowX:"auto"}}>
@@ -1515,7 +1509,7 @@ export default function PorraMundial(){
                         </div>;
                       })()}
                       {/* Ajuste manual visible solo en General */}
-                      {classPhase==="General" && p.manualPts && p.manualPts!==0 && (
+                      {classPhase==="General" && (p.manualPts!==undefined && p.manualPts!==null && (p.manualPts!==0 || p.manualReason)) && (
                         <div style={{marginTop:8,padding:"6px 10px",background:"rgba(255,200,0,0.08)",borderRadius:8,border:"1px solid rgba(255,200,0,0.2)"}}>
                           <span style={{fontFamily:"sans-serif",fontSize:11,color:"#d4af37"}}>⚡ Ajuste admin: </span>
                           <span style={{fontFamily:"sans-serif",fontSize:11,fontWeight:"bold",color:p.manualPts>0?"#4caf50":"#ff6b6b"}}>
@@ -1717,7 +1711,7 @@ export default function PorraMundial(){
             .sort((a,b)=>b.score-a.score);
 
           // Premio general: bote total - (fase × 6) + bote pakete acumulado
-          const generalPot = (cfg.boteTotal||300) - PHASES.length * phasePrize + totalBotePakete;
+          const generalPot = (cfg.boteTotal||300) - PHASES.length * phasePrize; // Bote pakete es independiente, va al último
           const pcts = cfg.generalPct || [45,32,14,9];
 
           // Último clasificado general → recibe bote pakete
@@ -2405,46 +2399,50 @@ export default function PorraMundial(){
                           </div>
                           {isOpen&&(
                             <div style={{marginTop:10}}>
-                              <div style={{fontFamily:"sans-serif",fontSize:11,color:"#777",marginBottom:6}}>
-                                Usa números positivos o negativos (ej: 3 o -2)
-                              </div>
                               <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-                                {/* Botones rápidos */}
-                                {[-3,-2,-1,1,2,3].map(v=>(
-                                  <button key={v} onMouseDown={e=>{e.preventDefault();setManualPts(m=>({...m,[p.id]:String(v)}));}}
-                                    style={{flex:1,padding:"7px 0",borderRadius:8,border:`1px solid ${v<0?"rgba(255,100,100,0.3)":"rgba(76,175,80,0.3)"}`,background:"transparent",color:v<0?"#ff9a9a":"#a8d8a8",fontSize:13,fontFamily:"sans-serif",cursor:"pointer"}}>
-                                    {v>0?"+":""}{v}
-                                  </button>
-                                ))}
-                              </div>
-                              <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                                <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur-1)}));}}
+                                  style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(255,100,100,0.4)",background:"transparent",color:"#ff9a9a",fontSize:22,cursor:"pointer",flexShrink:0}}>−</button>
                                 <input
                                   type="text"
                                   inputMode="decimal"
                                   value={manualPts[p.id]||"0"}
                                   onChange={e=>{
                                     const val=e.target.value;
-                                    if(/^-?\d*\.?\d*$/.test(val)||val==="-")
+                                    if(/^-?\d*\.?\d*$/.test(val)||val==="-"||val==="")
                                       setManualPts(m=>({...m,[p.id]:val}));
                                   }}
-                                  style={{...S.input,flex:1,padding:"9px",textAlign:"center",fontSize:16}}/>
-                                <span style={{fontFamily:"sans-serif",color:"#888",fontSize:13,flexShrink:0}}>pts</span>
+                                  style={{...S.input,flex:1,padding:"9px",textAlign:"center",fontSize:20,fontWeight:"bold"}}/>
+                                <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur+1)}));}}
+                                  style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(76,175,80,0.4)",background:"transparent",color:"#a8d8a8",fontSize:22,cursor:"pointer",flexShrink:0}}>+</button>
                               </div>
+                              <div style={{fontFamily:"sans-serif",fontSize:11,color:"#555",marginBottom:8,textAlign:"center"}}>Pulsa + / − o escribe directamente · 0 = sin ajuste</div>
                               <input value={manualReason[p.id]||""}
                                 onChange={e=>setManualReason(m=>({...m,[p.id]:e.target.value}))}
                                 placeholder="Motivo (ej: corrección jornada 2)..."
                                 style={{...S.input,marginBottom:8,fontSize:13}}/>
-                              <button onClick={()=>{
-                                const val=parseFloat(manualPts[p.id]||"0");
-                                if(isNaN(val))return toast_("Número inválido","err");
-                                const reason=(manualReason[p.id]||"").trim();
-                                setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualPts:val,manualReason:reason}:x)}));
-                                setManualOpen(null);
-                                toast_(`${p.name}: ${val>0?"+":""}${val} pts${reason?" ("+reason+")":""} ✓`);
-                                addLog(`⚡ Ajuste ${p.name}: ${val>0?"+":""}${val} pts${reason?" — "+reason:""}`);
-                              }} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontWeight:"bold",fontFamily:"sans-serif",fontSize:14}}>
-                                ✓ Guardar ajuste
-                              </button>
+                              <div style={{display:"flex",gap:8}}>
+                                <button onClick={()=>{
+                                  setConfirmDialog({msg:`¿Borrar el ajuste de puntos de ${p.name}?`,onOk:()=>{
+                                    setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualPts:0,manualReason:""}:x)}));
+                                    setManualOpen(null);
+                                    toast_(`Ajuste de ${p.name} borrado`);
+                                    addLog(`⚡ Ajuste de ${p.name} borrado`);
+                                  }});
+                                }} style={{flex:1,padding:"10px",borderRadius:9,border:"1px solid rgba(255,50,50,0.3)",cursor:"pointer",background:"transparent",color:"#ff6b6b",fontFamily:"sans-serif",fontSize:13}}>
+                                  🗑 Borrar ajuste
+                                </button>
+                                <button onClick={()=>{
+                                  const val=parseFloat(manualPts[p.id]);
+                                  if(isNaN(val))return toast_("Número inválido","err");
+                                  const reason=(manualReason[p.id]||"").trim();
+                                  setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualPts:val,manualReason:reason}:x)}));
+                                  setManualOpen(null);
+                                  toast_(`${p.name}: ${val>0?"+":""}${val} pts${reason?" ("+reason+")":""} ✓`);
+                                  addLog(`⚡ Ajuste ${p.name}: ${val>0?"+":""}${val} pts${reason?" — "+reason:""}`);
+                                }} style={{flex:2,padding:"10px",borderRadius:9,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontWeight:"bold",fontFamily:"sans-serif",fontSize:14}}>
+                                  ✓ Guardar ajuste
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -2480,74 +2478,6 @@ export default function PorraMundial(){
           </div>
         )}
       </div>
-
-      {/* ── MODAL BACKUP ── */}
-      {backupModal&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:2000,display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:20,overflowY:"auto"}}>
-          <div style={{width:"calc(100% - 24px)",maxWidth:460,background:"linear-gradient(160deg,#0d1520,#14081e)",borderRadius:18,border:"1px solid rgba(212,175,55,0.3)",overflow:"hidden",marginBottom:20}}>
-            <div style={{background:"linear-gradient(135deg,rgba(212,175,55,0.15),rgba(255,107,0,0.1))",padding:"16px 18px",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-              <div style={{fontSize:10,letterSpacing:4,color:"#d4af37",textTransform:"uppercase",marginBottom:3}}>Copia de seguridad</div>
-              <div style={{fontSize:18,fontWeight:"bold",color:"#fff"}}>💾 Guardar / Restaurar</div>
-            </div>
-            <div style={{padding:"16px 18px"}}>
-
-              {/* EXPORTAR */}
-              <div style={{marginBottom:20}}>
-                <div style={{fontFamily:"sans-serif",fontSize:13,color:"#d4af37",fontWeight:"bold",marginBottom:6}}>📤 Guardar datos</div>
-                <div style={{fontFamily:"sans-serif",fontSize:12,color:"#888",marginBottom:8}}>
-                  Copia este texto y guárdalo (en notas, email, etc.). Cuando abras la porra de nuevo, pégalo en "Restaurar" para recuperar todo.
-                </div>
-                <textarea readOnly value={exportText}
-                  style={{width:"100%",height:100,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,color:"#aaa",fontFamily:"monospace",fontSize:10,padding:"8px",boxSizing:"border-box",resize:"none",outline:"none"}}
-                />
-                <button onClick={()=>{
-                  try{
-                    navigator.clipboard.writeText(exportText).then(()=>toast_("¡Copiado al portapapeles! ✓")).catch(()=>toast_("Selecciona y copia el texto manualmente","err"));
-                  }catch{ toast_("Selecciona y copia el texto manualmente","err"); }
-                }} style={{width:"100%",marginTop:8,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#d4af37,#ff6b00)",color:"#000",fontSize:14,fontWeight:"bold",fontFamily:"sans-serif"}}>
-                  📋 Copiar al portapapeles
-                </button>
-              </div>
-
-              {/* IMPORTAR */}
-              <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",paddingTop:16}}>
-                <div style={{fontFamily:"sans-serif",fontSize:13,color:"#7b8fff",fontWeight:"bold",marginBottom:6}}>📥 Restaurar datos</div>
-                <div style={{fontFamily:"sans-serif",fontSize:12,color:"#888",marginBottom:8}}>
-                  Pega aquí el texto que guardaste anteriormente para recuperar todos los datos.
-                </div>
-                <textarea value={importText} onChange={e=>setImportText(e.target.value)}
-                  placeholder="Pega aquí el código de backup..."
-                  style={{width:"100%",height:100,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(123,47,255,0.3)",borderRadius:8,color:"#fff",fontFamily:"monospace",fontSize:10,padding:"8px",boxSizing:"border-box",resize:"none",outline:"none"}}
-                />
-                <button onClick={()=>{
-                  try{
-                    const parsed=JSON.parse(importText.trim());
-                    if(!parsed.eibar&&!parsed.participants&&!parsed.matches) throw new Error("formato inválido");
-                    // Handle both old and new format
-                    if(parsed.eibar){
-                      setState({...initialState,...parsed});
-                    } else {
-                      // Old format migration
-                      setState(s=>({...s,matches:parsed.matches||[],eibar:{...initialPorra(),participants:parsed.participants||[],playerList:parsed.playerList||DEFAULT_PLAYERS}}));
-                    }
-                    setBackupModal(false); setImportText("");
-                    toast_(`Datos restaurados ✓`);
-                  }catch(e){
-                    toast_("Código inválido, revisa que lo has copiado completo","err");
-                  }
-                }} style={{width:"100%",marginTop:8,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7b2fff,#00c6ff)",color:"#fff",fontSize:14,fontWeight:"bold",fontFamily:"sans-serif"}}>
-                  📥 Restaurar datos
-                </button>
-              </div>
-
-              <button onClick={()=>setBackupModal(false)}
-                style={{width:"100%",marginTop:12,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:"rgba(255,255,255,0.07)",color:"#ccc",fontSize:14,fontFamily:"sans-serif"}}>
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── MODAL EDITAR PARTICIPANTE ── */}
       {editParticipant&&(()=>{
