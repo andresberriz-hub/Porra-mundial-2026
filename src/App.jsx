@@ -1403,7 +1403,6 @@ export default function PorraMundial(){
                     if(newUser.teams.length!==12) return toast_("Elige exactamente 12 equipos","err");
                     if(remaining<0) return toast_("Te has pasado de 80 créditoss","err");
                     setRegStep(3);
-                  }} style={{flex:2,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#d4af37,#ff6b00)",color:"#000",fontWeight:"bold",fontFamily:"sans-serif",cursor:"pointer"}}>Siguiente →</button>
                 </div>
               </div>
               );
@@ -1432,7 +1431,6 @@ export default function PorraMundial(){
                     setNewUser({name:"",teams:[],players:[]}); setRegStep(1); setView("ranking");
                     toast_(`¡${newUser.name} registrado! 🎉`);
                     addLog(`👤 Nuevo participante: ${newUser.name}`);
-                  }} style={{flex:2,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontWeight:"bold",fontFamily:"sans-serif",cursor:"pointer"}}>¡Confirmar! 🎉</button>
                 </div>
               </div>
             )}
@@ -2438,35 +2436,30 @@ export default function PorraMundial(){
                               <div style={{fontFamily:"sans-serif",fontSize:11,color:"#888",marginBottom:8}}>Nuevo ajuste:</div>
                               <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
                                 <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur-1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(255,100,100,0.4)",background:"transparent",color:"#ff9a9a",fontSize:22,cursor:"pointer",flexShrink:0}}>-</button>
-                                <input type="text" inputMode="decimal" value={manualPts[p.id]||"0"}
-                                  onChange={e=>{const val=e.target.value;if(/^-?[0-9]*[.,]?[0-9]*$/.test(val)||val==="-"||val==="")setManualPts(m=>({...m,[p.id]:val}));}}
-                                  style={{...S.input,flex:1,padding:"9px",textAlign:"center",fontSize:20,fontWeight:"bold"}}/>
+                                <input type="text" inputMode="decimal" value={manualPts[p.id]||"0"} onChange={e=>{const v=e.target.value;if(v===""||v==="-"||/^-?[0-9]+[.]?[0-9]*$/.test(v))setManualPts(m=>({...m,[p.id]:v}));}} style={{...S.input,flex:1,padding:"9px",textAlign:"center",fontSize:20,fontWeight:"bold"}}/>
                                 <button onMouseDown={e=>{e.preventDefault();const cur=parseFloat(manualPts[p.id]||"0")||0;setManualPts(m=>({...m,[p.id]:String(cur+1)}));}} style={{width:44,height:44,borderRadius:10,border:"1px solid rgba(76,175,80,0.4)",background:"transparent",color:"#a8d8a8",fontSize:22,cursor:"pointer",flexShrink:0}}>+</button>
                               </div>
-                              <input value={manualReason[p.id]||""} onChange={e=>setManualReason(m=>({...m,[p.id]:e.target.value}))}
-                                placeholder="Motivo del ajuste..."
-                                style={{...S.input,marginBottom:8,fontSize:13}}/>
+                              <input value={manualReason[p.id]||""} onChange={e=>setManualReason(m=>({...m,[p.id]:e.target.value}))} placeholder="Motivo del ajuste..." style={{...S.input,marginBottom:8,fontSize:13}}/>
                               <button onClick={()=>{
-                                  const val=parseFloat(manualPts[p.id]);
-                                  if(isNaN(val))return toast_("Número inválido","err");
-                                  const reason=(manualReason[p.id]||"").trim();
-                                  const newAdj={pts:val,reason,date:new Date().toLocaleDateString("es-ES")};
-                                  const newAdjs=[...adjs,newAdj];
-                                  setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:newAdjs,manualPts:undefined,manualReason:undefined}:x)}));
-                                  setManualOpen(null);
-                                  toast_(`${p.name}: ${val>0?"+":""}${val} pts añadido ✓`);
-                                  addLog(`⚡ Ajuste ${p.name}: ${val>0?"+":""}${val} pts${reason?" - "+reason:""}`);
-                                }} style={{flex:2,padding:"10px",borderRadius:9,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontWeight:"bold",fontFamily:"sans-serif",fontSize:14}}>
-                                  ✓ Guardar ajuste
-                                </button>
-                              </div>
+                                const val=parseFloat(manualPts[p.id]);
+                                if(isNaN(val))return toast_("Numero invalido","err");
+                                const reason=(manualReason[p.id]||"").trim();
+                                const newAdj={pts:val,reason,date:new Date().toLocaleDateString("es-ES")};
+                                const newAdjs=[...adjs,newAdj];
+                                setPorra(prev=>({...prev,participants:prev.participants.map(x=>x.id===p.id?{...x,manualAdjustments:newAdjs,manualPts:undefined,manualReason:undefined}:x)}));
+                                setManualOpen(null);
+                                toast_(p.name+": "+(val>0?"+":"")+val+" pts anadido");
+                                addLog("Ajuste "+p.name+": "+(val>0?"+":"")+val+" pts"+(reason?" - "+reason:""));
+                              }} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontWeight:"bold",fontFamily:"sans-serif",fontSize:14}}>
+                                Guardar ajuste
+                              </button>
                             </div>
                           )}
                         </div>
                       );
                     })}
 
-                    {/* Eliminar goles */}
+                                        {/* Eliminar goles */}
                     <div style={{fontFamily:"sans-serif",fontSize:13,color:"#d4af37",fontWeight:"bold",marginBottom:8,marginTop:16}}>🗑 Eliminar goles registrados</div>
                     {state.matches.filter(m=>(m.playerGoals||[]).length>0).length===0?(
                       <div style={{...S.card,textAlign:"center",padding:20}}><div style={{fontFamily:"sans-serif",color:"#555",fontSize:13}}>No hay goles registrados aún</div></div>
