@@ -1,5 +1,5 @@
-// Porra Mundial 2026 — Producción con Supabase
-import { useState, useEffect } from "react";
+// v61 - fix sync race condition, orden equipos por créditos, fix Final +2 (80k, 12 selecciones, límite 1x13k y 1x11k, sobrante = puntos)
+import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase.js";
 
 // ── Temas de color por porra ─────────────────────────────────────────────
@@ -417,7 +417,8 @@ function phaseBonus(m, team){
   if(m.phase==="Grupos") return 0;
   const winner=m.score1>m.score2?m.team1:m.score2>m.score1?m.team2:(m.penWinner||null);
   if(winner!==team) return 0;
-  return SC.phaseAdvance + (m.phase==="Final" ? SC.winFinal : 0);
+  if(m.phase==="Final") return SC.winFinal; // Final: solo +8, sin +2
+  return SC.phaseAdvance; // Resto eliminatorias: +2
 }
 
 // +2 por clasificar desde fase de grupos (cuando los 72 partidos están jugados)
@@ -664,40 +665,34 @@ export default function PorraMundial(){
   // Storage: carga primero, solo guarda después de haber cargado
   const [loaded, setLoaded] = useState(false);
   const [saveReady, setSaveReady] = useState(false);
+  const isSaving = useRef(false); // evita que el realtime sobreescriba mientras guardamos
 
-  // Carga inicial + suscripción en tiempo real
   useEffect(()=>{
     // Carga inicial
     (async()=>{
       try{
         const { data, error } = await supabase
-          .from('porra_state')
-          .select('data')
-          .eq('id', 1)
-          .single();
+          .from('porra_state').select('data').eq('id', 1).single();
         if(!error && data?.data){
           const parsed = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
           setState(s=>({...initialState,...parsed}));
         }
       }catch(e){ console.log("load error",e); }
       setLoaded(true);
-      setTimeout(()=>setSaveReady(true), 100);
+      setTimeout(()=>setSaveReady(true), 500);
     })();
 
-    // Suscripción en tiempo real — recibe cambios de otros usuarios
+    // Realtime — ignora updates mientras estamos guardando (isSaving)
     const channel = supabase
-      .channel('porra_state_changes')
+      .channel('porra_realtime')
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'porra_state', filter: 'id=eq.1' },
         (payload) => {
+          if(isSaving.current) return; // ignorar si acabamos de guardar nosotros
           const remote = payload.new?.data;
           if(remote){
             const parsed = typeof remote === 'string' ? JSON.parse(remote) : remote;
-            setState(s => {
-              // Merge: mantén el estado local para la porra activa,
-              // pero acepta cambios externos en matches y la otra porra
-              return { ...parsed };
-            });
+            setState(parsed);
           }
         }
       )
@@ -710,27 +705,11 @@ export default function PorraMundial(){
     if(!saveReady) return;
     const t=setTimeout(async()=>{
       try{
-        // Antes de guardar, lee el estado más reciente de la BD
-        const { data } = await supabase
-          .from('porra_state')
-          .select('data')
-          .eq('id', 1)
-          .single();
-        
-        const remote = data?.data ? (typeof data.data === 'string' ? JSON.parse(data.data) : data.data) : null;
-        
-        // Merge: combina estado remoto con cambios locales
-        const merged = remote ? {
-          ...remote,
-          matches: state.matches,           // matches siempre del local (quien guarda manda)
-          adminPassword: state.adminPassword,
-          eibar: state.eibar,
-          zumaia: state.zumaia,
-        } : state;
-
-        await supabase.from('porra_state').upsert({ id: 1, data: merged });
-      }catch(e){ console.log("save error",e); }
-    },800);
+        isSaving.current = true;
+        await supabase.from('porra_state').upsert({ id: 1, data: state });
+        setTimeout(()=>{ isSaving.current = false; }, 4000); // ignorar bounce 4s
+      }catch(e){ console.log("save error",e); isSaving.current = false; }
+    }, 400);
     return()=>clearTimeout(t);
   },[state,saveReady]);
 
@@ -923,7 +902,8 @@ export default function PorraMundial(){
     input:{width:"100%",padding:"11px 12px",borderRadius:9,border:`1px solid ${T.accentBorder}`,background:"rgba(255,255,255,0.07)",color:"#fff",fontSize:14,fontFamily:"sans-serif",boxSizing:"border-box",outline:"none"},
   };
 
-  const filteredTeams=(groupFilter==="Todos"?TEAMS:GROUPS[groupFilter]||[]).filter(t=>t.toLowerCase().includes(searchTeam.toLowerCase()));
+  const TEAMS_BY_KREDITU = [...TEAMS].sort((a,b)=>(kOf(b)||0)-(kOf(a)||0));
+  const filteredTeams=(groupFilter==="Todos"?TEAMS_BY_KREDITU:GROUPS[groupFilter]||[]).filter(t=>t.toLowerCase().includes(searchTeam.toLowerCase()));
   const filteredPlayers=(playerList).filter(p=>p.toLowerCase().includes(searchPlayer.toLowerCase()));
 
   // ── Helper goles jugadores — función normal, NO componente React (evita re-mount y pérdida de foco) ──
