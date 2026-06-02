@@ -1498,15 +1498,27 @@ export default function PorraMundial(){
                         </div>;
                       })()}
                       {/* Ajuste manual visible solo en General */}
-                      {classPhase==="General" && p.manualPts && p.manualPts!==0 && (
-                        <div style={{marginTop:8,padding:"6px 10px",background:"rgba(255,200,0,0.08)",borderRadius:8,border:"1px solid rgba(255,200,0,0.2)"}}>
-                          <span style={{fontFamily:"sans-serif",fontSize:11,color:"#d4af37"}}>⚡ Ajuste admin: </span>
-                          <span style={{fontFamily:"sans-serif",fontSize:11,fontWeight:"bold",color:p.manualPts>0?"#4caf50":"#ff6b6b"}}>
-                            {p.manualPts>0?"+":""}{p.manualPts} pts
-                          </span>
-                          {p.manualReason&&<span style={{fontFamily:"sans-serif",fontSize:11,color:"#888"}}> — {p.manualReason}</span>}
-                        </div>
-                      )}
+                      {classPhase==="General"&&(()=>{
+                        const adjs=Array.isArray(p.manualAdjustments)?p.manualAdjustments
+                          :(p.manualPts!==undefined&&p.manualPts!==null&&(p.manualPts!==0||p.manualReason))
+                            ?[{pts:p.manualPts,reason:p.manualReason||"",date:""}]:[];
+                        if(!adjs.length)return null;
+                        const tot=adjs.reduce((s,a)=>s+(a.pts||0),0);
+                        return(
+                          <div style={{marginTop:8,padding:"6px 10px",background:"rgba(255,200,0,0.08)",borderRadius:8,border:"1px solid rgba(255,200,0,0.2)"}}>
+                            <div style={{fontFamily:"sans-serif",fontSize:11,color:"#d4af37",marginBottom:adjs.length>1?3:0}}>
+                              Ajustes admin: <b style={{color:tot>0?"#4caf50":tot<0?"#ff6b6b":"#888"}}>{tot>0?"+":""}{tot} pts</b>
+                            </div>
+                            {adjs.map((a,i)=>(
+                              <div key={i} style={{fontFamily:"sans-serif",fontSize:11,color:"#888",marginTop:1}}>
+                                <span style={{color:a.pts>0?"#4caf50":a.pts<0?"#ff6b6b":"#777"}}>{a.pts>0?"+":""}{a.pts}pts</span>
+                                {a.reason&&<span> - {a.reason}</span>}
+                                {a.date&&<span style={{color:"#555"}}> · {a.date}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
                       {/* Cierre del bloque condicional hideTeams */}
                       </>)}
                     </div>
