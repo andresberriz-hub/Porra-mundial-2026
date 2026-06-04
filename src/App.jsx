@@ -458,6 +458,18 @@ function playerPts(participant, matches){
 
 // GENERAL: todos los partidos + bonus de fase + goles jugadores de todo el torneo
 // POR FASE: solo partidos de esa fase + resultado/goles equipo + goles jugadores en esa fase (sin bonus)
+// Fusiona dos listas de participantes sin perder ninguno
+// Si un participante existe en ambas, gana la versión local (más reciente)
+function mergeParticipants(local, remote){
+  const merged = [...local];
+  for(const rp of remote){
+    if(!merged.find(lp=>lp.id===rp.id)){
+      merged.push(rp); // añadir participante remoto que no está en local
+    }
+  }
+  return merged;
+}
+
 function calcScore(participant, allMatches, phase=null){
   let total=0;
   const phaseMatches = phase ? allMatches.filter(m=>m.phase===phase) : allMatches;
@@ -698,8 +710,31 @@ export default function PorraMundial(){
   useEffect(()=>{
     if(!saveReady)return;
     const t=setTimeout(async()=>{
-      try{isSaving.current=true;await supabase.from('porra_state').upsert({id:1,data:state});setTimeout(()=>{isSaving.current=false;},4000);}
-      catch(e){console.log("save error",e);isSaving.current=false;}
+      try{
+        isSaving.current=true;
+        // Leer estado actual de Supabase antes de guardar
+        const {data}=await supabase.from('porra_state').select('data').eq('id',1).single();
+        const remote=data?.data?(typeof data.data==='string'?JSON.parse(data.data):data.data):null;
+        
+        let toSave=state;
+        if(remote){
+          // Merge inteligente: fusionar participantes de ambas porras para no perder registros
+          toSave={
+            ...state,
+            eibar:{
+              ...state.eibar,
+              participants:mergeParticipants(state.eibar?.participants||[], remote.eibar?.participants||[]),
+            },
+            zumaia:{
+              ...state.zumaia,
+              participants:mergeParticipants(state.zumaia?.participants||[], remote.zumaia?.participants||[]),
+            },
+          };
+        }
+        
+        await supabase.from('porra_state').upsert({id:1,data:toSave});
+        setTimeout(()=>{isSaving.current=false;},4000);
+      }catch(e){console.log("save error",e);isSaving.current=false;}
     },400);
     return()=>clearTimeout(t);
   },[state,saveReady]);
