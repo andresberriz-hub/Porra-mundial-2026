@@ -624,6 +624,7 @@ const DEFAULT_PREMIOS_CONFIG = {
 const initialPorra = () => ({
   participants:[], playerList:[...DEFAULT_PLAYERS], hideTeams:false,
   registrationClosed:false, avisos:[], premiosConfig:{...DEFAULT_PREMIOS_CONFIG}, historial:[],
+  homeHidden:{comoFunciona:false, puntuacion:false, creditos:false},
 });
 const initialState = {
   matches: [],
@@ -1269,22 +1270,22 @@ export default function PorraMundial(){
                 })}
               </div>
             )}
-            <div style={S.card}>
+            {!(porra.homeHidden?.comoFunciona) && <div style={S.card}>
               <h2 style={{margin:"0 0 10px",fontSize:16,color:"#d4af37"}}>¿Cómo funciona?</h2>
               {[["⚽","Elige 12 selecciones del Mundial 2026"],["🌟","Elige 3 jugadores estrella"],["📈","Acumula puntos partido a partido"],["🏆","Compite en ranking general y por fase"]].map(([ic,tx])=>(
                 <div key={tx} style={{display:"flex",gap:10,alignItems:"center",marginBottom:6,fontFamily:"sans-serif",fontSize:13,color:"#ccc"}}><span style={{fontSize:17}}>{ic}</span><span>{tx}</span></div>
               ))}
-            </div>
-            <div style={{...S.card,border:"1px solid rgba(255,107,0,0.2)"}}>
+            </div>}
+            {!(porra.homeHidden?.puntuacion) && <div style={{...S.card,border:"1px solid rgba(255,107,0,0.2)"}}>
               <h2 style={{margin:"0 0 10px",fontSize:16,color:"#ff9a4a"}}>Puntuación</h2>
               {[["Victoria de tu equipo","+3"],["Empate de tu equipo","+1"],["Gol a favor","+0.5"],["Gol en contra","−0.25"],["Tu equipo pasa de fase","+2"],["Gol de tu jugador","+0.75"],["Tu equipo gana la final","+8"]].map(([l,p])=>(
                 <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",fontFamily:"sans-serif",fontSize:12}}>
                   <span style={{color:"#bbb"}}>{l}</span><span style={{fontWeight:"bold",color:p.startsWith("−")?"#ff6b6b":"#4caf50"}}>{p} pts</span>
                 </div>
               ))}
-            </div>
+            </div>}
             <div style={{fontFamily:"sans-serif",fontSize:12,color:"#666",textAlign:"center",marginBottom:8}}>{participants.length} participante{participants.length!==1?"s":""} registrado{participants.length!==1?"s":""}</div>
-            <div style={{...S.card,border:"1px solid rgba(76,175,80,0.2)",marginBottom:8}}>
+            {!(porra.homeHidden?.creditos) && <div style={{...S.card,border:"1px solid rgba(76,175,80,0.2)",marginBottom:8}}>
               <h2 style={{margin:"0 0 10px",fontSize:16,color:"#4caf50"}}>💰 Sistema de Créditos</h2>
               <div style={{fontFamily:"sans-serif",fontSize:12,color:"#bbb",marginBottom:8}}>Cada participante dispone de <b style={{color:"#fff"}}>80 créditos</b> para elegir 12 selecciones. Los créditos sobrantes se convierten en puntos extra.</div>
               {[
@@ -1303,7 +1304,7 @@ export default function PorraMundial(){
                   {row.r!=="libre"&&<span style={{fontFamily:"sans-serif",fontSize:10,color:"#ff9a4a",flexShrink:0}}>{row.r}</span>}
                 </div>
               ))}
-            </div>
+            </div>}
             <button onClick={()=>setView("register")} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#d4af37,#ff6b00)",color:"#000",fontSize:15,fontWeight:"bold",fontFamily:"sans-serif"}}>¡Unirse a la porra!</button>
           </div>
         )}
@@ -1517,7 +1518,12 @@ export default function PorraMundial(){
                           const {totalPts}=calcTeamBreakdown(t, p.players, phase);
                           return(
                             <button key={t} onClick={()=>setTeamDetail({participantId:p.id,team:t,phase})} style={{padding:"4px 10px",borderRadius:14,border:"none",cursor:"pointer",background:"rgba(212,175,55,0.1)",color:"#ddd",fontSize:12,display:"flex",alignItems:"center",gap:5}}>
-                              {t}{totalPts!==0&&<span style={{fontWeight:"bold",color:totalPts>0?"#4caf50":"#ff6b6b",fontSize:11}}>{totalPts>0?"+":""}{totalPts}</span>}
+                              {t}
+                              {(()=>{
+                                const played=state.matches.filter(m=>m.played&&(m.team1===t||m.team2===t)&&(phase?m.phase===phase:true)).length;
+                                if(totalPts!==0||played>0) return <span style={{fontWeight:"bold",color:totalPts>0?"#4caf50":totalPts<0?"#ff6b6b":"#888",fontSize:11}}>{totalPts>0?"+":""}{totalPts}</span>;
+                                return null;
+                              })()}
                             </button>
                           );
                         })}
@@ -2426,6 +2432,29 @@ export default function PorraMundial(){
                           {porra.hideTeams?"🔒 Activado":"🔓 Activar"}
                         </button>
                       </div>
+                    </div>
+
+                    <div style={{...S.card,border:"1px solid rgba(212,175,55,0.15)",marginBottom:12}}>
+                      <div style={{fontFamily:"sans-serif",fontSize:13,color:"#d4af37",fontWeight:"bold",marginBottom:10}}>🏠 Secciones pantalla de inicio</div>
+                      {[
+                        {key:"comoFunciona", label:"¿Cómo funciona?"},
+                        {key:"puntuacion",   label:"Puntuación"},
+                        {key:"creditos",     label:"Sistema de Créditos"},
+                      ].map(({key,label})=>{
+                        const hidden = porra.homeHidden?.[key]||false;
+                        return(
+                          <div key={key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                            <span style={{fontFamily:"sans-serif",fontSize:13,color:hidden?"#555":"#ccc"}}>{label}</span>
+                            <button onClick={()=>setPorra(p=>({...p,homeHidden:{...(p.homeHidden||{}), [key]:!hidden}}))}
+                              style={{padding:"5px 12px",borderRadius:14,border:"none",cursor:"pointer",
+                                background:hidden?"rgba(255,50,50,0.12)":"rgba(76,175,80,0.12)",
+                                color:hidden?"#ff6b6b":"#4caf50",
+                                fontFamily:"sans-serif",fontSize:12,fontWeight:"bold"}}>
+                              {hidden?"🙈 Oculto":"👁 Visible"}
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     <div style={{...S.card,border:"1px solid rgba(212,175,55,0.15)",marginBottom:12}}>
