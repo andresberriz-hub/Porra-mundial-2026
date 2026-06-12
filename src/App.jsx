@@ -676,6 +676,7 @@ export default function PorraMundial(){
   const [pens, setPens] = useState({});
   const [bracketPhase, setBracketPhase] = useState("Dieciseisavos");
   const [teamDetail, setTeamDetail] = useState(null);
+  const [pickerPopup, setPickerPopup] = useState(null);
   const [playerDetail, setPlayerDetail] = useState(null);
   const [newPlayerName, setNewPlayerName] = useState("");
   // Storage: carga primero, solo guarda después de haber cargado
@@ -1037,12 +1038,15 @@ export default function PorraMundial(){
             <div style={{fontFamily:"sans-serif",fontSize:12,color:"#777",marginBottom:2}}>{m.desc}</div>
             {/* Equipos: resultado real o auto-calculados */}
             {(effT1||effT2)&&(
-              <div style={{fontFamily:"sans-serif",fontWeight:"bold",fontSize:14,color:r?"#fff":"#a0d0a0",marginTop:2,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                <span>{flag(effT1)} {effT1||"?"}</span>
-                {r?<span style={{color:"#d4af37"}}>{r.score1}–{r.score2}</span>:<span style={{color:"#555",fontWeight:"normal",fontSize:12}}>vs</span>}
-                <span>{effT2||"?"} {flag(effT2)}</span>
-                {r?.penWinner&&<span style={{fontSize:10,color:"#888"}}>(pen:{r.penWinner})</span>}
-                {!r&&autoT1&&<span style={{fontSize:10,color:"#4caf50",fontWeight:"normal"}}>auto ✓</span>}
+              <div style={{marginTop:2}}>
+                <div style={{fontFamily:"sans-serif",fontWeight:"bold",fontSize:14,color:r?"#fff":"#a0d0a0",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                  <span>{flag(effT1)} {effT1||"?"}</span>
+                  {r?<span style={{color:"#d4af37"}}>{r.score1}–{r.score2}</span>:<span style={{color:"#555",fontWeight:"normal",fontSize:12}}>vs</span>}
+                  <span>{effT2||"?"} {flag(effT2)}</span>
+                  {r?.penWinner&&<span style={{fontSize:10,color:"#888"}}>(pen:{r.penWinner})</span>}
+                  {!r&&autoT1&&<span style={{fontSize:10,color:"#4caf50",fontWeight:"normal"}}>auto ✓</span>}
+                </div>
+                {!porra.hideTeams&&effT1&&(()=>{const names=participants.filter(p=>p.teams?.includes(effT1)).map(p=>p.name);return names.length>0?<button onClick={e=>{e.stopPropagation();setPickerPopup({team:effT1,names,x:e.clientX,y:e.clientY});}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"0 2px",opacity:0.7,display:"inline"}}>👥</button>:null;})()}
               </div>
             )}
             {r?.playerGoals?.length>0&&<div style={{fontSize:10,fontFamily:"sans-serif",color:"#a0c0ff",marginTop:2}}>
@@ -1693,7 +1697,14 @@ export default function PorraMundial(){
             }, 0);
             const owners = participants.filter(p=>p.players.some(pl=>norm(pl)===norm(player))).map(p=>p.name);
             const pts = Math.round(totalGoals * 0.75 * 100) / 100;
-            return { player, totalGoals, pts, owners };
+            // Buscar selección del jugador en los goles marcados
+            let team = "";
+            for(const m of state.matches){
+              const goal = (m.playerGoals||[]).find(pg=>norm(pg.player)===norm(player));
+              if(goal){team=goal.team||"";break;}
+            }
+            // Si no ha marcado aún, buscar en playerGoals de todos los partidos por nombre similar
+            return { player, totalGoals, pts, owners, team };
           }).sort((a,b)=>b.totalGoals-a.totalGoals||a.player.localeCompare(b.player));
 
           const maxGoals = goalData[0]?.totalGoals || 0;
@@ -1725,6 +1736,7 @@ export default function PorraMundial(){
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                           <span style={{fontWeight:"bold",fontSize:15,color:isTop?"#fff":"#ddd"}}>{d.player}</span>
+                          {d.team&&<span style={{fontSize:11,color:"#888",fontFamily:"sans-serif",marginLeft:4}}>{flag(d.team)} {d.team}</span>}
                           <div style={{textAlign:"right",flexShrink:0,marginLeft:8}}>
                             <span style={{fontSize:18,color:"#d4af37",fontWeight:"bold"}}>{d.totalGoals}</span>
                             <span style={{fontSize:11,color:"#888",marginLeft:3}}>⚽</span>
@@ -1888,13 +1900,23 @@ export default function PorraMundial(){
                 <div key={m.id} style={{...S.card,border:r?"1px solid rgba(76,175,80,0.15)":"1px solid rgba(255,255,255,0.07)"}}>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                     <div style={{flex:1,textAlign:"right",fontFamily:"sans-serif",fontSize:13,color:"#ddd",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:4}}>
-                      <span>{m.team1}</span><span style={{fontSize:18}}>{flag(m.team1)}</span>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:4}}>
+                          {!porra.hideTeams&&(()=>{const names=participants.filter(p=>p.teams?.includes(m.team1)).map(p=>p.name);return names.length>0?<button onClick={e=>{e.stopPropagation();setPickerPopup({team:m.team1,names,x:e.clientX,y:e.clientY});}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"0 2px",opacity:0.7}}>👥</button>:null;})()}
+                          <span>{m.team1}</span><span style={{fontSize:18}}>{flag(m.team1)}</span>
+                        </div>
+                      </div>
                     </div>
                     <div style={{minWidth:60,textAlign:"center",fontFamily:"sans-serif",fontWeight:"bold",fontSize:r?17:13,color:r?"#fff":"#444",background:r?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",padding:"4px 9px",borderRadius:7,margin:"0 7px"}}>
                       {r?`${r.score1}–${r.score2}`:"vs"}
                     </div>
                     <div style={{flex:1,fontFamily:"sans-serif",fontSize:13,color:"#ddd",display:"flex",alignItems:"center",gap:4}}>
-                      <span style={{fontSize:18}}>{flag(m.team2)}</span><span>{m.team2}</span>
+                      <div>
+                        <div style={{display:"flex",alignItems:"center",gap:4}}>
+                          <span style={{fontSize:18}}>{flag(m.team2)}</span><span>{m.team2}</span>
+                          {!porra.hideTeams&&(()=>{const names=participants.filter(p=>p.teams?.includes(m.team2)).map(p=>p.name);return names.length>0?<button onClick={e=>{e.stopPropagation();setPickerPopup({team:m.team2,names,x:e.clientX,y:e.clientY});}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"0 2px",opacity:0.7}}>👥</button>:null;})()}
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div style={{textAlign:"center",fontSize:10,fontFamily:"sans-serif",color:"#555",marginTop:4}}>
@@ -2748,6 +2770,30 @@ export default function PorraMundial(){
           </div>
         );
       })()}
+
+      {/* ── POPUP PARTICIPANTES POR EQUIPO ── */}
+      {pickerPopup&&(
+        <div onClick={()=>setPickerPopup(null)} style={{position:"fixed",inset:0,zIndex:1500}}>
+          <div onClick={e=>e.stopPropagation()} style={{
+            position:"fixed",
+            top:Math.min(pickerPopup.y+8, window.innerHeight-140),
+            left:Math.min(Math.max(pickerPopup.x-80,8), window.innerWidth-200),
+            background:"#1a2535",
+            border:`1px solid ${T.accentBorder}`,
+            borderRadius:10,padding:"10px 14px",
+            zIndex:1501,minWidth:150,
+            boxShadow:"0 4px 20px rgba(0,0,0,0.7)"
+          }}>
+            <div style={{fontFamily:"sans-serif",fontSize:11,color:T.primary,fontWeight:"bold",marginBottom:6}}>{flag(pickerPopup.team)} {pickerPopup.team}</div>
+            {pickerPopup.names.length===0
+              ? <div style={{fontFamily:"sans-serif",fontSize:12,color:"#555"}}>Nadie lo ha elegido</div>
+              : pickerPopup.names.map(n=>(
+                <div key={n} style={{fontFamily:"sans-serif",fontSize:12,color:"#ccc",padding:"2px 0"}}>👤 {n}</div>
+              ))
+            }
+          </div>
+        </div>
+      )}
 
       {/* ── MODAL EQUIPO ── */}
       {teamDetail&&(()=>{
