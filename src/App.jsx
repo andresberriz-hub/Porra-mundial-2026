@@ -702,7 +702,18 @@ export default function PorraMundial(){
     const ch=supabase.channel('porra_rt').on('postgres_changes',{event:'UPDATE',schema:'public',table:'porra_state',filter:'id=eq.1'},(payload)=>{
       if(isSaving.current)return;
       const r=payload.new?.data;
-      if(r){const p=typeof r==='string'?JSON.parse(r):r;setState({...initialState,...p,eibar:{...initialPorra(),...(p.eibar||{})},zumaia:{...initialPorra(),...(p.zumaia||{})},matches:p.matches||[],adminPassword:p.adminPassword||"AD1818"});}
+      if(r){
+        const p=typeof r==='string'?JSON.parse(r):r;
+        setState(prev=>({
+          ...prev,
+          // Siempre actualizar matches compartidos
+          matches:p.matches||prev.matches,
+          adminPassword:p.adminPassword||prev.adminPassword,
+          // Actualizar datos de cada porra preservando participantes locales si son más recientes
+          eibar:{...initialPorra(),...(p.eibar||{}),participants:mergeParticipants(prev.eibar?.participants||[],p.eibar?.participants||[])},
+          zumaia:{...initialPorra(),...(p.zumaia||{}),participants:mergeParticipants(prev.zumaia?.participants||[],p.zumaia?.participants||[])},
+        }));
+      }
     }).subscribe();
     return()=>{supabase.removeChannel(ch);};
   },[]);
@@ -1236,9 +1247,9 @@ export default function PorraMundial(){
             </div>
             )}
             {/* ── Tablón de avisos ── */}
-            {(porra.avisos||[]).length>0&&(
+            {(porra.avisos||[]).filter(a=>!a.hidden).length>0&&(
               <div style={{marginBottom:8}}>
-                {(porra.avisos||[]).map((a,i)=>{
+                {(porra.avisos||[]).filter(a=>!a.hidden).map((a,i)=>{
                   const colors = {
                     info:  {bg:"rgba(100,150,255,0.1)",  border:"rgba(100,150,255,0.3)",  icon:"📢", title:"#a0b8ff"},
                     warning:{bg:"rgba(255,180,0,0.1)",   border:"rgba(255,180,0,0.3)",    icon:"⚠️", title:"#ffd060"},
@@ -2229,7 +2240,7 @@ export default function PorraMundial(){
                       };
                       const col = colors[a.tipo]||colors.info;
                       return(
-                        <div key={a.id} style={{...S.card,border:col.border,padding:"12px 14px"}}>
+                        <div key={a.id} style={{...S.card,border:col.border,padding:"12px 14px",opacity:a.hidden?0.5:1}}>
                           <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
                             <span style={{fontSize:16,flexShrink:0}}>{col.icon}</span>
                             <div style={{flex:1,minWidth:0}}>
@@ -2237,10 +2248,18 @@ export default function PorraMundial(){
                               {a.texto&&<div style={{fontFamily:"sans-serif",fontSize:12,color:"#888",marginTop:3}}>{a.texto}</div>}
                               <div style={{fontFamily:"sans-serif",fontSize:10,color:"#555",marginTop:4}}>{a.fecha}</div>
                             </div>
-                            <button onClick={()=>setConfirmDialog({msg:`¿Eliminar aviso "${a.titulo}"?`,onOk:()=>{
-                              setPorra(p=>({...p,avisos:(p.avisos||[]).filter(x=>x.id!==a.id)}));
-                              toast_("Aviso eliminado");
-                            }})} style={{background:"none",border:"none",color:"#ff6b6b",cursor:"pointer",fontSize:16,flexShrink:0,padding:"0 4px"}}>×</button>
+                            <div style={{display:"flex",gap:6,flexShrink:0}}>
+                              <button onClick={()=>{
+                                setPorra(p=>({...p,avisos:(p.avisos||[]).map(x=>x.id===a.id?{...x,hidden:!x.hidden}:x)}));
+                                toast_(a.hidden?"Aviso visible":"Aviso oculto");
+                              }} style={{background:"none",border:`1px solid ${a.hidden?"rgba(76,175,80,0.4)":"rgba(255,180,0,0.4)"}`,borderRadius:6,color:a.hidden?"#4caf50":"#ffd060",cursor:"pointer",fontSize:11,padding:"2px 7px",fontFamily:"sans-serif"}}>
+                                {a.hidden?"👁 Mostrar":"🙈 Ocultar"}
+                              </button>
+                              <button onClick={()=>setConfirmDialog({msg:`¿Eliminar aviso "${a.titulo}"?`,onOk:()=>{
+                                setPorra(p=>({...p,avisos:(p.avisos||[]).filter(x=>x.id!==a.id)}));
+                                toast_("Aviso eliminado");
+                              }})} style={{background:"none",border:"none",color:"#ff6b6b",cursor:"pointer",fontSize:16,padding:"0 4px"}}>×</button>
+                            </div>
                           </div>
                         </div>
                       );
