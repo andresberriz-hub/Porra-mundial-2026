@@ -682,7 +682,8 @@ export default function PorraMundial(){
   // Storage: carga primero, solo guarda después de haber cargado
   const [loaded, setLoaded] = useState(false);
   const [saveReady, setSaveReady] = useState(false);
-  const isSaving = useRef(false); // evita que el realtime sobreescriba mientras guardamos
+  const isSaving = useRef(false);
+  const pendingSave = useRef(null); // timestamp del último cambio local
 
   useEffect(()=>{
     (async()=>{
@@ -702,16 +703,16 @@ export default function PorraMundial(){
       setTimeout(()=>setSaveReady(true),500);
     })();
     const ch=supabase.channel('porra_rt').on('postgres_changes',{event:'UPDATE',schema:'public',table:'porra_state',filter:'id=eq.1'},(payload)=>{
-      if(isSaving.current)return;
+      // Ignorar si hay un guardado pendiente o en curso
+      if(isSaving.current) return;
+      if(pendingSave.current && Date.now() - pendingSave.current < 5000) return;
       const r=payload.new?.data;
       if(r){
         const p=typeof r==='string'?JSON.parse(r):r;
         setState(prev=>({
           ...prev,
-          // Siempre actualizar matches compartidos
           matches:p.matches||prev.matches,
           adminPassword:p.adminPassword||prev.adminPassword,
-          // Actualizar datos de cada porra preservando participantes locales si son más recientes
           eibar:{...initialPorra(),...(p.eibar||{}),participants:mergeParticipants(prev.eibar?.participants||[],p.eibar?.participants||[])},
           zumaia:{...initialPorra(),...(p.zumaia||{}),participants:mergeParticipants(prev.zumaia?.participants||[],p.zumaia?.participants||[])},
         }));
@@ -722,16 +723,15 @@ export default function PorraMundial(){
 
   useEffect(()=>{
     if(!saveReady)return;
+    // Marcar que hay un cambio local pendiente de guardar
+    pendingSave.current = Date.now();
     const t=setTimeout(async()=>{
       try{
         isSaving.current=true;
-        // Leer estado actual de Supabase antes de guardar
         const {data}=await supabase.from('porra_state').select('data').eq('id',1).single();
         const remote=data?.data?(typeof data.data==='string'?JSON.parse(data.data):data.data):null;
-        
         let toSave=state;
         if(remote){
-          // Merge inteligente: fusionar participantes de ambas porras para no perder registros
           toSave={
             ...state,
             eibar:{
@@ -744,10 +744,13 @@ export default function PorraMundial(){
             },
           };
         }
-        
         await supabase.from('porra_state').upsert({id:1,data:toSave});
-        setTimeout(()=>{isSaving.current=false;},4000);
-      }catch(e){console.log("save error",e);isSaving.current=false;}
+        // Mantener protección 5 segundos tras guardar
+        setTimeout(()=>{
+          isSaving.current=false;
+          pendingSave.current=null;
+        },5000);
+      }catch(e){console.log("save error",e);isSaving.current=false;pendingSave.current=null;}
     },400);
     return()=>clearTimeout(t);
   },[state,saveReady]);
