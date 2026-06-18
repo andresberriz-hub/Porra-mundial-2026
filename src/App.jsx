@@ -472,7 +472,13 @@ function mergeParticipants(local, remote){
 
 function calcScore(participant, allMatches, phase=null){
   let total=0;
-  const phaseMatches = phase ? allMatches.filter(m=>m.phase===phase) : allMatches;
+  let phaseMatches;
+  if(phase==="J1"||phase==="J2"||phase==="J3"){
+    const j=parseInt(phase[1]);
+    phaseMatches=allMatches.filter(m=>m.phase==="Grupos"&&getJornada(m.id)===j);
+  } else {
+    phaseMatches = phase ? allMatches.filter(m=>m.phase===phase) : allMatches;
+  }
   const playedMatches = phaseMatches.filter(m=>m.played);
   for(const m of playedMatches){
     for(const t of participant.teams){
@@ -548,7 +554,12 @@ function calcPhasePrize(phase, participants, matches, phasePrize) {
 
 // Comprueba si una fase está completa (todos sus partidos jugados)
 function isPhaseComplete(phase, matches) {
-  const total = {"Grupos":72,"Dieciseisavos":16,"Octavos":8,"Cuartos":4,"Semifinal":2,"Final":1};
+  const total = {"Grupos":72,"J1":24,"J2":24,"J3":24,"Dieciseisavos":16,"Octavos":8,"Cuartos":4,"Semifinal":2,"Final":1};
+  if(phase==="J1"||phase==="J2"||phase==="J3"){
+    const j=parseInt(phase[1]);
+    const played=matches.filter(m=>m.phase==="Grupos"&&m.played&&getJornada(m.id)===j).length;
+    return played>=24;
+  }
   const played = matches.filter(m=>m.phase===phase && m.played).length;
   return played >= (total[phase]||0);
 }
@@ -796,7 +807,9 @@ export default function PorraMundial(){
     return()=>clearInterval(id);
   },[]);
   const medal = i => ["🥇","🥈","🥉"][i]||`${i+1}º`;
-  const PHASES_LIST = ["Grupos","Dieciseisavos","Octavos","Cuartos","Semifinal"]; // Final solo puntúa para general
+  const PHASES_LIST = activePorra==="zumaia"
+    ? ["J1","J2","J3","Dieciseisavos","Octavos","Cuartos","Semifinal"]
+    : ["Grupos","Dieciseisavos","Octavos","Cuartos","Semifinal"];
 
   const rankings = phase => {
     return [...participants]
@@ -862,15 +875,18 @@ export default function PorraMundial(){
   };
 
   // ── Desglose equipo ───────────────────────────────────────────────────────
-  // phase=null → General (todos los partidos + bonus); phase="Grupos" → solo esa fase sin bonus
-  // NOTA: los goles de jugadores se muestran como info pero NO se suman aquí
-  // (se calculan una sola vez en calcScore para evitar duplicación si el participante tiene ambos equipos)
   const calcTeamBreakdown = (team, playersList, phase=null)=>{
     const rows=[];
     let totalPts=0;
-    const matches = phase
-      ? state.matches.filter(m=>m.played && (m.team1===team||m.team2===team) && m.phase===phase)
-      : state.matches.filter(m=>m.played && (m.team1===team||m.team2===team));
+    let matches;
+    if(phase==="J1"||phase==="J2"||phase==="J3"){
+      const j=parseInt(phase[1]);
+      matches=state.matches.filter(m=>m.played&&(m.team1===team||m.team2===team)&&m.phase==="Grupos"&&getJornada(m.id)===j);
+    } else {
+      matches = phase
+        ? state.matches.filter(m=>m.played&&(m.team1===team||m.team2===team)&&m.phase===phase)
+        : state.matches.filter(m=>m.played&&(m.team1===team||m.team2===team));
+    }
 
     for(const m of matches){
       const isT1=m.team1===team;
@@ -926,7 +942,13 @@ export default function PorraMundial(){
   // phase=null → todos los partidos (General); phase="Grupos" → solo esa fase
   const calcPlayerBreakdown = (player, phase=null)=>{
     const rows=[]; let totalGoals=0,totalPts=0;
-    const matches = phase ? state.matches.filter(m=>m.phase===phase) : state.matches;
+    let matches;
+    if(phase==="J1"||phase==="J2"||phase==="J3"){
+      const j=parseInt(phase[1]);
+      matches=state.matches.filter(m=>m.phase==="Grupos"&&getJornada(m.id)===j);
+    } else {
+      matches = phase ? state.matches.filter(m=>m.phase===phase) : state.matches;
+    }
     for(const m of matches){
       if(!m.played) continue;
       const goals=(m.playerGoals||[]).filter(pg=>norm(pg.player)===norm(player)).length;
@@ -1768,7 +1790,7 @@ export default function PorraMundial(){
         {/* ── PREMIOS ── */}
         {view==="premios"&&(()=>{
           const cfg = porra.premiosConfig || DEFAULT_PREMIOS_CONFIG;
-          const PHASES = ["Grupos","Dieciseisavos","Octavos","Cuartos","Semifinal"];
+          const PHASES = activePorra==="zumaia" ? ["J1","J2","J3","Dieciseisavos","Octavos","Cuartos","Semifinal"] : ["Grupos","Dieciseisavos","Octavos","Cuartos","Semifinal"];
           const phasePrize = cfg.phasePrize || 5;
 
           // Calcular bote pakete acumulado de todas las fases
@@ -1796,7 +1818,7 @@ export default function PorraMundial(){
 
           const allGeneralComplete = isPhaseComplete("Final", state.matches);
 
-          const phaseIcons = {"Grupos":"⚽","Dieciseisavos":"🔵","Octavos":"🟣","Cuartos":"🟠","Semifinal":"🔴"};
+          const phaseIcons = {"Grupos":"⚽","J1":"1️⃣","J2":"2️⃣","J3":"3️⃣","Dieciseisavos":"🔵","Octavos":"🟣","Cuartos":"🟠","Semifinal":"🔴"};
 
           return(
             <div style={{padding:"6px 12px"}}>
@@ -2353,7 +2375,7 @@ export default function PorraMundial(){
                     <div style={{fontFamily:"sans-serif",fontSize:13,color:"#d4af37",fontWeight:"bold",marginBottom:8}}>💰 Configuración de premios</div>
                     {(()=>{
                       const cfg = porra.premiosConfig || DEFAULT_PREMIOS_CONFIG;
-                      const PHASES = ["Grupos","Dieciseisavos","Octavos","Cuartos","Semifinal"];
+                      const PHASES = activePorra==="zumaia" ? ["J1","J2","J3","Dieciseisavos","Octavos","Cuartos","Semifinal"] : ["Grupos","Dieciseisavos","Octavos","Cuartos","Semifinal"];
                       const generalPot = (cfg.boteTotal||300) - PHASES.length*(cfg.phasePrize||5);
                       return(
                         <div style={S.card}>
