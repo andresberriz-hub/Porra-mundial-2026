@@ -267,6 +267,14 @@ const GROUP_MATCHES_CHRONO = [...GROUP_MATCHES].sort((a,b)=>{
   return (a.time||"00:00").localeCompare(b.time||"00:00");
 });
 
+// Jornada de un partido de grupos: J1=partidos 1-2, J2=3-4, J3=5-6 de cada grupo
+function getJornada(matchId){
+  const num = parseInt(matchId[1]);
+  if(num<=2) return 1;
+  if(num<=4) return 2;
+  return 3;
+}
+
 const R32 = [
   // Dieciseisavos — hora española CEST (UTC+2), según calendario oficial FIFA
   {id:"R32-1", label:"P73", desc:"2º A vs 2º B",     date:"28 Jun",time:"21:00",phase:"Dieciseisavos"},
