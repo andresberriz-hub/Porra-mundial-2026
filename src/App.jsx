@@ -1089,12 +1089,13 @@ export default function PorraMundial(){
               <div style={{marginTop:2}}>
                 <div style={{fontFamily:"sans-serif",fontWeight:"bold",fontSize:14,color:r?"#fff":"#a0d0a0",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                   <span>{flag(effT1)} {effT1||"?"}</span>
+                  {!porra.hideTeams&&effT1&&(()=>{const names=participants.filter(p=>p.teams?.includes(effT1)).map(p=>p.name);return names.length>0?<button onClick={e=>{e.stopPropagation();setPickerPopup({team:effT1,names,x:e.clientX,y:e.clientY});}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"0 2px",opacity:0.7}}>👥</button>:null;})()}
                   {r?<span style={{color:"#d4af37"}}>{r.score1}–{r.score2}</span>:<span style={{color:"#555",fontWeight:"normal",fontSize:12}}>vs</span>}
+                  {!porra.hideTeams&&effT2&&(()=>{const names=participants.filter(p=>p.teams?.includes(effT2)).map(p=>p.name);return names.length>0?<button onClick={e=>{e.stopPropagation();setPickerPopup({team:effT2,names,x:e.clientX,y:e.clientY});}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"0 2px",opacity:0.7}}>👥</button>:null;})()}
                   <span>{effT2||"?"} {flag(effT2)}</span>
                   {r?.penWinner&&<span style={{fontSize:10,color:"#888"}}>(pen:{r.penWinner})</span>}
                   {!r&&autoT1&&<span style={{fontSize:10,color:"#4caf50",fontWeight:"normal"}}>auto ✓</span>}
                 </div>
-                {!porra.hideTeams&&effT1&&(()=>{const names=participants.filter(p=>p.teams?.includes(effT1)).map(p=>p.name);return names.length>0?<button onClick={e=>{e.stopPropagation();setPickerPopup({team:effT1,names,x:e.clientX,y:e.clientY});}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"0 2px",opacity:0.7,display:"inline"}}>👥</button>:null;})()}
               </div>
             )}
             {r?.playerGoals?.length>0&&<div style={{fontSize:10,fontFamily:"sans-serif",color:"#a0c0ff",marginTop:2}}>
