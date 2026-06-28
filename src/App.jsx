@@ -845,6 +845,21 @@ export default function PorraMundial(){
     addLog(`⚽ Resultado: ${team1} ${parseInt(s1)}–${parseInt(s2)} ${team2} (${phase})`);
   };
 
+  // Guarda solo los equipos de un partido sin resultado (para rellenar cruces)
+  const saveTeams = (matchId, phase)=>{
+    const t1=scores[matchId+"_t1"]||"";
+    const t2=scores[matchId+"_t2"]||"";
+    if(!t1&&!t2) return toast_("Escribe al menos un equipo","err");
+    setState(prev=>{
+      const ex=prev.matches.find(m=>m.id===matchId);
+      if(ex) return {...prev,matches:prev.matches.map(m=>m.id===matchId?{...m,team1:t1||m.team1,team2:t2||m.team2}:m)};
+      return {...prev,matches:[...prev.matches,{id:matchId,phase,team1:t1,team2:t2,score1:null,score2:null,played:false,penWinner:"",playerGoals:[]}]};
+    });
+    setEditMatch(null);
+    toast_("Equipos guardados ✓");
+    addLog(`📋 Equipos ${matchId}: ${t1} vs ${t2}`);
+  };
+
   const addPG = (matchId, name)=>{
     if(!name) return toast_("Escribe el nombre del jugador","err");
     const tpl=[...GROUP_MATCHES,...ALL_BRACKET].find(m=>m.id===matchId);
@@ -1161,10 +1176,16 @@ export default function PorraMundial(){
               <option value="">Sin penaltis</option>
               {[scores[m.id+"_t1"]||r?.team1,scores[m.id+"_t2"]||r?.team2].filter(Boolean).map(t=><option key={t} value={t}>{t} gana penaltis</option>)}
             </select>
-            <button onClick={()=>saveResult(m.id,m.phase,scores[m.id+"_t1"]||r?.team1||autoT1||"",scores[m.id+"_t2"]||r?.team2||autoT2||"")}
-              style={{width:"100%",padding:"9px",borderRadius:9,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontSize:13,fontWeight:"bold",fontFamily:"sans-serif"}}>
-              ✓ Guardar resultado
-            </button>
+            <div style={{display:"flex",gap:6,marginBottom:4}}>
+              <button onClick={()=>saveTeams(m.id,m.phase)}
+                style={{flex:1,padding:"9px",borderRadius:9,border:"1px solid rgba(212,175,55,0.4)",cursor:"pointer",background:"transparent",color:"#d4af37",fontSize:12,fontWeight:"bold",fontFamily:"sans-serif"}}>
+                📋 Solo equipos
+              </button>
+              <button onClick={()=>saveResult(m.id,m.phase,scores[m.id+"_t1"]||r?.team1||autoT1||"",scores[m.id+"_t2"]||r?.team2||autoT2||"")}
+                style={{flex:2,padding:"9px",borderRadius:9,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#4caf50,#087f23)",color:"#fff",fontSize:13,fontWeight:"bold",fontFamily:"sans-serif"}}>
+                ✓ Guardar resultado
+              </button>
+            </div>
             {pgBlock(m.id)}
           </div>
         )}
