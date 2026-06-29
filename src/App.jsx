@@ -267,6 +267,32 @@ const GROUP_MATCHES_CHRONO = [...GROUP_MATCHES].sort((a,b)=>{
   return (a.time||"00:00").localeCompare(b.time||"00:00");
 });
 
+// Devuelve true si el equipo ha sido eliminado en eliminatorias
+function isEliminated(team, matches){
+  if(!team||!matches) return false;
+  for(const m of matches){
+    if(!m.played||m.phase==="Grupos") continue;
+    if(m.team1!==team&&m.team2!==team) continue;
+    const winner=m.score1>m.score2?m.team1:m.score2>m.score1?m.team2:(m.penWinner||null);
+    if(winner&&winner!==team) return true;
+  }
+  return false;
+}
+
+// Devuelve true si el equipo no clasificó desde grupos (cuando los 72 partidos están jugados)
+function didNotQualify(team, matches){
+  const groupsPlayed=matches.filter(m=>m.phase==="Grupos"&&m.played).length;
+  if(groupsPlayed<72) return false;
+  let teamGroup=null;
+  for(const [g,teams] of Object.entries(GROUPS)){if(teams.includes(team)){teamGroup=g;break;}}
+  if(!teamGroup) return false;
+  const standing=groupStandings(teamGroup,matches);
+  const pos=standing.findIndex(t=>t.team===team);
+  if(pos===0||pos===1) return false;
+  if(pos===2){const thirds=bestThirds(matches);if(thirds.slice(0,8).map(t=>t.team).includes(team))return false;}
+  return true;
+}
+
 // Jornada de un partido de grupos: J1=partidos 1-2, J2=3-4, J3=5-6 de cada grupo
 function getJornada(matchId){
   const num = parseInt(matchId[1]);
@@ -1576,13 +1602,14 @@ export default function PorraMundial(){
                           const phase = classPhase==="General" ? null : classPhase;
                           const {totalPts}=calcTeamBreakdown(t, p.players, phase);
                           return(
-                            <button key={t} onClick={()=>setTeamDetail({participantId:p.id,team:t,phase})} style={{padding:"4px 10px",borderRadius:14,border:"none",cursor:"pointer",background:"rgba(212,175,55,0.1)",color:"#ddd",fontSize:12,display:"flex",alignItems:"center",gap:5}}>
+                            <button key={t} onClick={()=>setTeamDetail({participantId:p.id,team:t,phase})} style={{padding:"4px 10px",borderRadius:14,border:"none",cursor:"pointer",background:"rgba(212,175,55,0.1)",color:"#ddd",fontSize:12,display:"flex",alignItems:"center",gap:5,opacity:(isEliminated(t,state.matches)||didNotQualify(t,state.matches))?0.5:1,textDecoration:(isEliminated(t,state.matches)||didNotQualify(t,state.matches))?"line-through":"none"}}>
                               {t}
                               {(()=>{
                                 const played=state.matches.filter(m=>m.played&&(m.team1===t||m.team2===t)&&(phase?m.phase===phase:true)).length;
                                 if(totalPts!==0||played>0) return <span style={{fontWeight:"bold",color:totalPts>0?"#4caf50":totalPts<0?"#ff6b6b":"#888",fontSize:11}}>{totalPts>0?"+":""}{totalPts}</span>;
                                 return null;
                               })()}
+                              {(isEliminated(t,state.matches)||didNotQualify(t,state.matches))&&<span style={{fontSize:10,color:"#ff6b6b"}}>✗</span>}
                             </button>
                           );
                         })}
@@ -1672,15 +1699,17 @@ export default function PorraMundial(){
                         {allTeams.map((t,ti)=>{
                           const count = parts.filter(p=>p.teams.includes(t)).length;
                           const isUnique = count===1;
+                          const elim = isEliminated(t,state.matches)||didNotQualify(t,state.matches);
                           return(
-                            <tr key={t} style={{background:ti%2===0?"rgba(255,255,255,0.02)":"transparent"}}>
+                            <tr key={t} style={{background:ti%2===0?"rgba(255,255,255,0.02)":"transparent",opacity:elim?0.55:1}}>
                               {/* Equipo — sticky izquierda */}
                               <td style={{padding:"4px 6px",whiteSpace:"nowrap",position:"sticky",left:0,background:ti%2===0?"#0e1622":"#0d1520",zIndex:1,borderBottom:"1px solid rgba(255,255,255,0.05)",borderRight:"1px solid rgba(255,255,255,0.08)"}}>
                                 <div style={{display:"flex",alignItems:"center",gap:4}}>
                                   <span style={{fontSize:13}}>{flag(t)}</span>
-                                  <span style={{color:"#ccc",fontSize:11}}>{t}</span>
+                                  <span style={{color:elim?"#555":"#ccc",fontSize:11,textDecoration:elim?"line-through":"none"}}>{t}</span>
                                   <span style={{fontSize:9,color:"#555",marginLeft:2}}>{kOf(t)}k</span>
                                   {count>0&&<span style={{fontSize:9,background:"rgba(255,255,255,0.06)",color:"#777",padding:"0 4px",borderRadius:6,marginLeft:2}}>{count}</span>}
+                                  {elim&&<span style={{fontSize:9,color:"#ff6b6b"}}>✗</span>}
                                 </div>
                               </td>
                               {/* Celdas por participante */}
@@ -1691,11 +1720,13 @@ export default function PorraMundial(){
                                     {has?(
                                       <div style={{
                                         width:18,height:18,borderRadius:4,margin:"0 auto",
-                                        background:isUnique?"rgba(212,175,55,0.3)":"rgba(76,175,80,0.25)",
-                                        border:isUnique?"1px solid rgba(212,175,55,0.5)":"1px solid rgba(76,175,80,0.4)",
-                                        display:"flex",alignItems:"center",justifyContent:"center",fontSize:10
+                                        background:elim?"rgba(255,50,50,0.15)":isUnique?"rgba(212,175,55,0.3)":"rgba(76,175,80,0.25)",
+                                        border:elim?"1px solid rgba(255,50,50,0.3)":isUnique?"1px solid rgba(212,175,55,0.5)":"1px solid rgba(76,175,80,0.4)",
+                                        display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,
+                                        position:"relative"
                                       }}>
-                                        {isUnique?"★":"✓"}
+                                        <span style={{textDecoration:elim?"line-through":"none",color:elim?"#666":isUnique?"#d4af37":"#4caf50"}}>{isUnique?"★":"✓"}</span>
+                                        {elim&&<span style={{position:"absolute",fontSize:10,color:"#ff6b6b",fontWeight:"bold",lineHeight:1}}>✗</span>}
                                       </div>
                                     ):(
                                       <span style={{color:"#333",fontSize:10}}>·</span>
